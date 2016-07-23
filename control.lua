@@ -443,7 +443,26 @@ script.on_event(defines.events.on_tick, function(event)
 								sconn.from,
 								sconn.to
 							)
-						end
+						elseif sconn.conn_type == "wire" then
+                    -- This will use red if connected else green if connected. only one wire ever gets mirrored.
+                    local rxNet = sconn.from.get_circuit_network(defines.wire_type.red) or sconn.from.get_circuit_network(defines.wire_type.green)
+                    if rxNet and rxNet.valid then 
+                      local txControl = sconn.to.get_or_create_control_behavior()
+                      local txSignals = {}
+                      local n = 1
+                      for _,s in pairs(rxNet.signals) do
+                        txSignals[n]={
+                          signal = {name=s.signal.name,type=s.signal.type},
+                          count = s.count,
+                          index = n
+                          }
+                        n = n+1 
+                      end
+                      txControl.parameters={parameters = txSignals}
+                    else
+                      sconn.to.get_or_create_control_behavior().parameters = nil
+                    end
+                  end
 					else
 						-- DELETE CONNECTION
 						if sconn.inside.valid then sconn.inside.destroy() end
@@ -459,41 +478,53 @@ script.on_event(defines.events.on_tick, function(event)
                local entities = parent_surface.find_entities{{px, py},{px+0.5, py+0.5}}
                if entitites then dbg("Found " .. #entities .. " entities") end
 
-               for _,ent in pairs(entities) do
-                 if ent.valid then
-                   if ent.type == "transport-belt" then
-                     if ent.direction == pconn.direction_in then
+               for _,outEntity in pairs(entities) do
+                 if outEntity.valid then
+                   if outEntity.type == "transport-belt" then
+                     if outEntity.direction == pconn.direction_in then
                        dbg("Connecting inwards belt")
-                       local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
-                       if e then
-                         e.direction = ent.direction
-                         ent.rotatable = false
-                         structure.connections[id] = {from = ent, to = e, inside = e, outside = ent, conn_type = "belt"}
+                       local inEntity = place_entity(surface, outEntity.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
+                       if inEntity then
+                         inEntity.direction = outEntity.direction
+                         outEntity.rotatable = false
+                         structure.connections[id] = {from = outEntity, to = inEntity, inside = inEntity, outside = outEntity, conn_type = "belt"}
                        end
-                     elseif ent.direction == pconn.direction_out then
+                     elseif outEntity.direction == pconn.direction_out then
                        dbg("Connecting outwards belt")
-                       local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
-                       if e then
-                         e.direction = ent.direction
-                         ent.rotatable = false
-                         structure.connections[id] = {from = e, to = ent, inside = e, outside = ent, conn_type = "belt"}
+                       local inEntity = place_entity(surface, outEntity.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
+                       if inEntity then
+                         inEntity.direction = outEntity.direction
+                         outEntity.rotatable = false
+                         structure.connections[id] = {from = inEntity, to = outEntity, inside = inEntity, outside = outEntity, conn_type = "belt"}
                        end
                      end
-                   elseif ent.type == "pipe" then
+                   elseif outEntity.type == "pipe" then
                      dbg("Connecting pipe")
-                     local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
-                     if e then
-                       structure.connections[id] = {from = e, to = ent, inside = e, outside = ent, conn_type = "pipe"}
+                     local inEntity = place_entity(surface, outEntity.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
+                     if inEntity then
+                       structure.connections[id] = {from = inEntity, to = outEntity, inside = inEntity, outside = outEntity, conn_type = "pipe"}
                      end
-                   elseif ent.type == "pipe-to-ground" then
-                     if ent.direction == pconn.direction_in then
+                   elseif outEntity.type == "pipe-to-ground" then
+                     if outEntity.direction == pconn.direction_in then
                        dbg("Connecting pipe to ground")
-                       local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
-                       if e then
-                         ent.rotatable = false
-                         structure.connections[id] = {from = e, to = ent, inside = e, outside = ent, conn_type = "pipe"}
+                       local inEntity = place_entity(surface, outEntity.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
+                       if inEntity then
+                         outEntity.rotatable = false
+                         structure.connections[id] = {from = inEntity, to = outEntity, inside = inEntity, outside = outEntity, conn_type = "pipe"}
                        end
                      end
+                   elseif outEntity.name == "small-lamp" then
+                      dbg("Connecting lamp")
+                      local inEntity = place_entity(surface, "relay-combinator", pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
+                      if inEntity then
+                        structure.connections[id] = {from = outEntity, to = inEntity, inside = inEntity, outside = outEntity, conn_type = "wire"}
+                      end
+                   elseif outEntity.name == "relay-combinator" then
+                      dbg("Connecting relay")
+                      local inEntity = place_entity(surface, "small-lamp", pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
+                      if inEntity then
+                        structure.connections[id] = {from = inEntity, to = outEntity, inside = inEntity, outside = outEntity, conn_type = "wire"}
+                      end
                    end
                  end
                end

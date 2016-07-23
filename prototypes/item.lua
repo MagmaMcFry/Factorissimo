@@ -11,6 +11,16 @@ data:extend({
   },
   {
     type = "item",
+    name = "relay-combinator",
+    icon = "__base__/graphics/icons/constant-combinator.png",
+    flags = {"goes-to-quickbar"},
+    subgroup = "production-machine",
+    place_result="relay-combinator",
+    order = "y[factory]-b[relay-combinator]",
+    stack_size = 50,
+  },
+  {
+    type = "item",
     name = "factory-power-provider",
     icon = "__base__/graphics/icons/accumulator.png",
     flags = {"goes-to-quickbar"},
@@ -28,5 +38,5 @@ data:extend({
     order = "y[factory]-z[invisible]-b",
     place_result = "factory-power-distributor",
     stack_size = 50
-  },
+  }
 })
