@@ -1,6 +1,10 @@
 require ("prototypes.copied-from-base.demo-pipecovers")
 require ("prototypes.copied-from-base.circuit-connector-sprites")
 
+local relay = copyPrototype("constant-combinator","constant-combinator","relay-combinator")
+relay.item_slot_count = 250
+data:extend{relay}
+
 data:extend({
 	-- FACTORY --
 	{

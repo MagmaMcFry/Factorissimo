@@ -9,6 +9,10 @@ data:extend({
 				type = "unlock-recipe",
 				recipe = "small-factory"
 			},
+         {
+				type = "unlock-recipe",
+				recipe = "relay-combinator"
+			},
 		},
 		prerequisites = {"steel-processing"},
 		unit =
