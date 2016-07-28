@@ -456,9 +456,9 @@ script.on_event(defines.events.on_tick, function(event)
 					local px = pconn.outside_x + structure.parent.position.x+0.5
 					local py = pconn.outside_y + structure.parent.position.y+0.5
 					
-					local e3 = parent_surface.find_entities_filtered{area = {{px-0.01, py-0.01},{px+0.01, py+0.01}}, type="transport-belt"}[1]
-					local e4 = parent_surface.find_entities_filtered{area = {{px-0.01, py-0.01},{px+0.01, py+0.01}}, type="pipe"}[1]
-					local e5 = parent_surface.find_entities_filtered{area = {{px-0.01, py-0.01},{px+0.01, py+0.01}}, type="pipe-to-ground"}[1]
+					local e3 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="transport-belt"}[1]
+					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
+					local e5 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe-to-ground"}[1]
 					
 					if e3 then
 						if e3.direction == pconn.direction_in then
@@ -521,7 +521,7 @@ end)
 -- ENTERING/LEAVING FACTORIES
 
 function get_factory_beneath(player)
-	local entities = player.surface.find_entities_filtered{area = {{player.position.x-0.1, player.position.y-0.3},{player.position.x+0.1, player.position.y}}, name="small-factory"}
+	local entities = player.surface.find_entities_filtered{area = {{player.position.x-0.2, player.position.y-0.3},{player.position.x+0.2, player.position.y}}, name="small-factory"}
 	return entities[1]
 end
 
