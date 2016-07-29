@@ -453,49 +453,52 @@ script.on_event(defines.events.on_tick, function(event)
 				elseif structure.ticks % 60 < 1 then
 					-- CREATE CONNECTION
 					
-					local px = pconn.outside_x + structure.parent.position.x+0.5
-					local py = pconn.outside_y + structure.parent.position.y+0.5
+					local px = pconn.outside_x + structure.parent.position.x
+					local py = pconn.outside_y + structure.parent.position.y
 					
-					local e3 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="transport-belt"}[1]
-					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
-					local e5 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe-to-ground"}[1]
-					
-					if e3 then
-						if e3.direction == pconn.direction_in then
-							dbg("Connecting inwards belt")
-							local e = place_entity(surface, e3.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
-							if e then
-								e.direction = e3.direction
-								e3.rotatable = false
-								structure.connections[id] = {from = e3, to = e, inside = e, outside = e3, conn_type = "belt"}
-							end
-						elseif e3.direction == pconn.direction_out then
-							dbg("Connecting outwards belt")
-							local e = place_entity(surface, e3.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
-							if e then
-								e.direction = e3.direction
-								e3.rotatable = false
-								structure.connections[id] = {from = e, to = e3, inside = e, outside = e3, conn_type = "belt"}
-							end
-						end
-					elseif e4 then
-						dbg("Connecting pipe")
-						local e = place_entity(surface, e4.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
-						if e then
-							structure.connections[id] = {from = e, to = e4, inside = e, outside = e4, conn_type = "pipe"}
-						end
-					elseif e5 then
-						if e5.direction == pconn.direction_in then
-							dbg("Connecting pipe to ground")
-							local e = place_entity(surface, e5.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
-							if e then
-								e5.rotatable = false
-								structure.connections[id] = {from = e, to = e5, inside = e, outside = e5, conn_type = "pipe"}
-							end
-						end
-					end
-				end
-			end
+               local entities = parent_surface.find_entities{{px, py},{px+0.5, py+0.5}}
+               if entitites then dbg("Found " .. #entities .. " entities") end
+
+               for _,ent in pairs(entities) do
+                 if ent.valid then
+                   if ent.type == "transport-belt" then
+                     if ent.direction == pconn.direction_in then
+                       dbg("Connecting inwards belt")
+                       local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
+                       if e then
+                         e.direction = ent.direction
+                         ent.rotatable = false
+                         structure.connections[id] = {from = ent, to = e, inside = e, outside = ent, conn_type = "belt"}
+                       end
+                     elseif ent.direction == pconn.direction_out then
+                       dbg("Connecting outwards belt")
+                       local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
+                       if e then
+                         e.direction = ent.direction
+                         ent.rotatable = false
+                         structure.connections[id] = {from = e, to = ent, inside = e, outside = ent, conn_type = "belt"}
+                       end
+                     end
+                   elseif ent.type == "pipe" then
+                     dbg("Connecting pipe")
+                     local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
+                     if e then
+                       structure.connections[id] = {from = e, to = ent, inside = e, outside = ent, conn_type = "pipe"}
+                     end
+                   elseif ent.type == "pipe-to-ground" then
+                     if ent.direction == pconn.direction_in then
+                       dbg("Connecting pipe to ground")
+                       local e = place_entity(surface, ent.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
+                       if e then
+                         ent.rotatable = false
+                         structure.connections[id] = {from = e, to = ent, inside = e, outside = ent, conn_type = "pipe"}
+                       end
+                     end
+                   end
+                 end
+               end
+            end
+         end
 			
 			-- TRANSFER POLLUTION
 			if structure.ticks % 20 < 1 then
@@ -521,7 +524,7 @@ end)
 -- ENTERING/LEAVING FACTORIES
 
 function get_factory_beneath(player)
-	local entities = player.surface.find_entities_filtered{area = {{player.position.x-0.2, player.position.y-0.3},{player.position.x+0.2, player.position.y}}, name="small-factory"}
+	local entities = player.surface.find_entities_filtered{area = {{player.position.x, player.position.y-0.3},{player.position.x, player.position.y}}, name="small-factory"}
 	return entities[1]
 end
 
