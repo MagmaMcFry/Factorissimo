@@ -1,3 +1,5 @@
+-- luacheck: globals global script defines game
+
 if not factorissimo then factorissimo = {} end
 if not factorissimo.config then factorissimo.config = {} end
 
@@ -5,7 +7,7 @@ require("config")
 
 -- GLOBALS --
 
-function glob_init()
+local function glob_init()
 	global["factory-surface"] = global["factory-surface"] or {}
 	global["surface-structure"] = global["surface-structure"] or {}
 	global["surface-layout"] = global["surface-layout"] or {}
@@ -258,7 +260,7 @@ LAYOUT = {
 
 -- FACTORY WORLD ASSIGNMENT --
 
-function create_surface(factory, layout)
+local function create_surface(factory, layout)
 	local surface_name = "Inside factory " .. factory.unit_number
 	local surface = game.create_surface(surface_name, {width = 64*layout.chunk_radius-62, height = 64*layout.chunk_radius-62})
 	local daytime = 0
@@ -283,18 +285,18 @@ function create_surface(factory, layout)
 	global["surface-exit"][surface_name] = {x = factory.position.x+layout.exit_x, y = factory.position.y+layout.exit_y, surface = factory.surface}
 end
 
-function connect_factory_to_existing_surface(factory, surface)
+local function connect_factory_to_existing_surface(factory, surface)
 	global["factory-surface"][factory.unit_number] = surface
 	global["surface-structure"][surface.name].parent = factory
 	local layout = get_layout(surface)
 	global["surface-exit"][surface.name] = {x = factory.position.x+layout.exit_x, y = factory.position.y+layout.exit_y, surface = factory.surface}
 end
 
-function has_surface(factory)
+local function has_surface(factory)
 	return global["factory-surface"][factory.unit_number] ~= nil
 end
 
-function get_surface(factory)
+local function get_surface(factory)
 	if global["factory-surface"][factory.unit_number] then
 		return global["factory-surface"][factory.unit_number]
 	else
@@ -302,35 +304,35 @@ function get_surface(factory)
 	end
 end
 
-function is_factory(surface)
+local function is_factory(surface)
 	return global["surface-structure"][surface.name] ~= nil
 end
 
-function get_structure(surface)
+local function get_structure(surface)
 	return global["surface-structure"][surface.name]
 end
 
-function set_structure(surface, structure_id, entity)
+local function set_structure(surface, structure_id, entity)
 	global["surface-structure"][surface.name][structure_id] = entity
 end
 
-function get_all_structures()
+local function get_all_structures()
 	return global["surface-structure"]
 end
 
-function get_layout(surface)
+local function get_layout(surface)
 	return global["surface-layout"][surface.name]
 end
 
-function get_layout_by_name(surface_name)
+local function get_layout_by_name(surface_name)
 	return global["surface-layout"][surface_name]
 end
 
-function get_exit(surface)
+local function get_exit(surface)
 	return global["surface-exit"][surface.name]
 end
 
-function save_health_data(factory)
+local function save_health_data(factory)
 	i = 1
 	while global["health-data"][i] do
 	i = i + 1
@@ -356,7 +358,7 @@ function save_health_data(factory)
 	end
 end
 
-function get_and_delete_health_data(health)
+local function get_and_delete_health_data(health)
 	local health_int = math.floor(health+0.5)
 	local data = global["health-data"][health_int]
 	global["health-data"][health_int] = nil
@@ -365,13 +367,13 @@ end
 
 -- FACTORY INTERIOR GENERATION --
 
-function delete_entities(surface)
+local function delete_entities(surface)
 	for _, entity in pairs(surface.find_entities({{-1000, -1000},{1000, 1000}})) do
 		entity.destroy()
 	end
 end
 
-function add_tile_rect(tiles, tile_name, xmin, ymin, xmax, ymax) -- tiles is rw
+local function add_tile_rect(tiles, tile_name, xmin, ymin, xmax, ymax) -- tiles is rw
 	local i = #tiles
 	for x = xmin, xmax-1 do
 		for y = ymin, ymax-1 do
@@ -381,7 +383,7 @@ function add_tile_rect(tiles, tile_name, xmin, ymin, xmax, ymax) -- tiles is rw
 	end
 end
 
-function place_entity(surface, entity_name, x, y, force, direction)
+local function place_entity(surface, entity_name, x, y, force, direction)
 	entity = surface.create_entity{name = entity_name, position = {x, y}, force = force, direction = direction}
 	if entity then
 		entity.minable = false
@@ -393,7 +395,7 @@ end
 
 
 -- TODO merge with place_entity?
-function place_entity_generated(surface, entity_name, x, y, structure_id)
+local function place_entity_generated(surface, entity_name, x, y, structure_id)
 	entity = surface.create_entity{name = entity_name, position = {x, y}, force = get_structure(surface).parent.force}
 	if entity then
 		entity.minable = false
@@ -406,7 +408,7 @@ function place_entity_generated(surface, entity_name, x, y, structure_id)
 	end
 end
 
-function build_factory_interior(factory, surface, layout, structure)
+local function build_factory_interior(factory, surface, layout, structure)
 	delete_entities(surface)
 	tiles = {}
 	for _, pconn in pairs(layout.possible_connections) do
@@ -435,7 +437,7 @@ end)
 
 -- PLACING, PICKING UP FACTORIES
 
-function on_built_factory(factory)
+local function on_built_factory(factory)
 	factory.rotatable = false
 	health_data = get_and_delete_health_data(factory.health)
 	if health_data then
@@ -464,7 +466,7 @@ end
  -- or aborting factory deconstruction, or, well, you get the point.
 
 
-function on_picked_up_factory(factory)
+local function on_picked_up_factory(factory)
 	save_health_data(factory)
 	local structure = get_structure(get_surface(factory))
 	for _, sconn in pairs(structure.connections) do
@@ -490,18 +492,18 @@ end)
 
 -- FACTORY MECHANICS
 
-function transfer_items_chest(from, to) -- from, to are inventories
+local function transfer_items_chest(from, to) -- from, to are inventories
 	for t, c in pairs(from.get_contents()) do
 		from.remove{name = t, count = to.insert{name = t, count = c}}
 	end
 end
 
-function transfer_items_belt(from, to) -- from, to are belts
+local function transfer_items_belt(from, to) -- from, to are belts
 	transfer_items_line(from.get_transport_line(1), to.get_transport_line(1))
 	transfer_items_line(from.get_transport_line(2), to.get_transport_line(2))
 end
 
-function transfer_items_line(from, to) -- from, to are lines
+local function transfer_items_line(from, to) -- from, to are lines
 	for t, c in pairs(from.get_contents()) do
 		if to.insert_at(0.75, {name = t, count = 1}) then
 			from.remove_item{name = t, count = 1}
@@ -513,7 +515,7 @@ function transfer_items_line(from, to) -- from, to are lines
 	end
 end
 
-function balance_fluids_pipe(from, to) -- from, to are pipes
+local function balance_fluids_pipe(from, to) -- from, to are pipes
 	fluid1 = from.fluidbox[1]
 	fluid2 = to.fluidbox[1]
 	if fluid1 and fluid2 then
@@ -531,7 +533,7 @@ function balance_fluids_pipe(from, to) -- from, to are pipes
 	end
 end
 
-function balance_power(from, to, multiplier)
+local function balance_power(from, to, multiplier)
 	local max_transfer_energy = math.min(from.energy, to.electric_buffer_size - to.energy)
 	from.energy = from.energy - max_transfer_energy
 	to.energy = to.energy + max_transfer_energy * multiplier
@@ -546,13 +548,13 @@ script.on_event(defines.events.on_tick, function(event)
 	-- FACTORY INVENTORY TRANSFER
 	for surface_name, structure in pairs(get_all_structures()) do
 		if structure.parent and structure.parent.valid and structure.finished then -- Don't do anything before the interior has finished generating
-		
+
 			structure.ticks = (structure.ticks or 0) + 1
-		
+
 			local surface = get_surface(structure.parent) --game.surfaces[surface_name]
 			local parent_surface = structure.parent.surface
 			local layout = get_layout(surface)
-			
+
 			-- TRANSFER POWER
 			if structure.power_provider and structure.power_provider.valid then
 				if layout.is_power_plant then
@@ -561,9 +563,9 @@ script.on_event(defines.events.on_tick, function(event)
 					balance_power(structure.parent, structure.power_provider, factorissimo.config.power_input_multiplier)
 				end
 			end
-			
+
 			-- TRANSFER ITEMS
-			
+
 			for id, pconn in pairs(layout.possible_connections) do
 				sconn = structure.connections[id]
 				if sconn then
@@ -591,17 +593,17 @@ script.on_event(defines.events.on_tick, function(event)
 						if sconn.inside.valid then sconn.inside.destroy() end
 						structure.connections[id] = nil
 					end
-					
+
 				elseif structure.ticks % 60 < 1 then
 					-- CREATE CONNECTION
-					
+
 					local px = pconn.outside_x + structure.parent.position.x+0.5
 					local py = pconn.outside_y + structure.parent.position.y+0.5
-					
+
 					local e3 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="transport-belt"}[1]
 					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
 					local e5 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe-to-ground"}[1]
-					
+
 					if e3 then
 						if e3.direction == pconn.direction_in then
 							dbg("Connecting inwards belt")
@@ -638,10 +640,10 @@ script.on_event(defines.events.on_tick, function(event)
 					end
 				end
 			end
-			
+
 			-- TRANSFER POLLUTION
 			if structure.ticks % 20 < 1 then
-				local exit_pos = get_exit(surface) 
+				local exit_pos = get_exit(surface)
 				for y = -1,1,2 do
 					for x = -1,1,2 do
 						local pollution = surface.get_pollution({x, y})
@@ -662,7 +664,7 @@ end)
 
 -- ENTERING/LEAVING FACTORIES
 
-function get_factory_beneath(player)
+local function get_factory_beneath(player)
 	local entities = player.surface.find_entities_filtered{area = {{player.position.x-0.2, player.position.y-0.3},{player.position.x+0.2, player.position.y}}}
 	for _, entity in pairs(entities) do
 		if LAYOUT[entity.name] then
@@ -672,13 +674,13 @@ function get_factory_beneath(player)
 	return nil
 end
 
-function get_exit_beneath(player)
+local function get_exit_beneath(player)
 	-- Depends on location of power distributor!
 	local entities = player.surface.find_entities_filtered{area={{player.position.x+2, player.position.y-3},{player.position.x+6, player.position.y-2}}, name="factory-power-distributor"}
 	return entities[1]
 end
 
-function try_enter_factory(player)
+local function try_enter_factory(player)
 	local factory = get_factory_beneath(player)
 	if factory and math.abs(factory.position.x-player.position.x) < 0.6 then
 		local new_surface = get_surface(factory)
@@ -693,7 +695,7 @@ function try_enter_factory(player)
 	end
 end
 
-function try_leave_factory(player)
+local function try_leave_factory(player)
 	local exit_building = get_exit_beneath(player)
 	if exit_building then
 		local exit_pos = get_exit(player.surface)
@@ -734,13 +736,13 @@ script.on_event(defines.events.on_gui_click, function(event)
 	end
 end)
 
-function dbg(text)
+local function dbg(text)
 	if DEBUG then
 		game.players[1].print(text)
 	end
 end
 
-function debug_this(player)
+local function debug_this(player)
 	local i = 0
 	for surface_name, structure in pairs(get_all_structures()) do
 		i = i+1
@@ -754,7 +756,7 @@ function debug_this(player)
 				player.print("(" .. i .. ") Entity is invalid")
 			end
 		end
-		
+
 	end
 	local entities = player.surface.find_entities_filtered{area = {{player.position.x-3, player.position.y-3},{player.position.x+3, player.position.y+3}}}
 	for _, entity in pairs(entities) do
