@@ -1,23 +1,25 @@
 -- luacheck: globals global script defines game
 
-if not factorissimo then factorissimo = {} end
-if not factorissimo.config then factorissimo.config = {} end
+local factorissimo = { config = {} }
 
 require("config")
 
 -- GLOBALS --
 
 local function glob_init()
-	global["factory-surface"] = global["factory-surface"] or {}
-	global["surface-structure"] = global["surface-structure"] or {}
-	global["surface-layout"] = global["surface-layout"] or {}
-	global["surface-exit"] = global["surface-exit"] or {}
-	global["health-data"] = global["health-data"] or {}
+	local stores = {
+		'factory-surface',
+		'surface-structure',
+		'surface-layout',
+		'surface-exit',
+		'health-data'
+	}
+	for _,store in ipairs(stores) do
+		global[store] = global[store] or {}
+	end
 end
 
-script.on_init(function()
-	glob_init()
-end)
+script.on_init( glob_init )
 
 -- SETTINGS --
 
