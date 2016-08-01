@@ -505,10 +505,6 @@ function transfer_items_line(from, to) -- from, to are lines
 	for t, c in pairs(from.get_contents()) do
 		if to.insert_at(0.75, {name = t, count = 1}) then
 			from.remove_item{name = t, count = 1}
-		elseif to.insert_at(0.85, {name = t, count = 1}) then
-			from.remove_item{name = t, count = 1}
-		elseif to.insert_at(0.95, {name = t, count = 1}) then
-			from.remove_item{name = t, count = 1}
 		end
 	end
 end

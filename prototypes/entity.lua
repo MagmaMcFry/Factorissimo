@@ -130,8 +130,8 @@ data:extend({
 		request_to_open_door_timeout = 15,
 		spawn_and_station_height = -0.1,
 
-		draw_logistic_radius_visualization = true,
-		draw_construction_radius_visualization = true,
+		draw_logistic_radius_visualization = false,
+		draw_construction_radius_visualization = false,
 
 		open_door_trigger_effect =
 		{
@@ -295,8 +295,8 @@ data:extend({
 		request_to_open_door_timeout = 15,
 		spawn_and_station_height = -0.1,
 
-		draw_logistic_radius_visualization = true,
-		draw_construction_radius_visualization = true,
+		draw_logistic_radius_visualization = false,
+		draw_construction_radius_visualization = false,
 
 		open_door_trigger_effect =
 		{
