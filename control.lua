@@ -536,8 +536,10 @@ end
 script.on_event(defines.events.on_tick, function(event)
 	-- PLAYER TRANSFER
 	for _, player in pairs(game.players) do
-		try_enter_factory(player)
-		try_leave_factory(player)
+		if player.vehicle == nil then
+			try_enter_factory(player)
+			try_leave_factory(player)
+		end
 	end
 	-- FACTORY INVENTORY TRANSFER
 	for surface_name, structure in pairs(get_all_structures()) do
