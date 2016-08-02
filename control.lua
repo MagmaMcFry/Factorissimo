@@ -261,21 +261,7 @@ LAYOUT = {
 function create_surface(factory, layout)
 	local surface_name = "Inside factory " .. factory.unit_number
 	local surface = game.create_surface(surface_name, {width = 64*layout.chunk_radius-62, height = 64*layout.chunk_radius-62})
-	local daytime = 0
-	if layout.is_power_plant then
-		daytime = factorissimo.config.power_plant_daytime
-	else
-		daytime = factorissimo.config.factory_daytime
-	end
-	if daytime == 2 then
-		surface.daytime = 0 -- Midday
-		surface.freeze_daytime(true)
-	elseif daytime == 0 then
-		surface.daytime = 0.5 -- Midnight
-		surface.freeze_daytime(true)
-	else
-		-- Default daylight cycle
-	end
+	reset_daytime(surface)
 	surface.request_to_generate_chunks({0, 0}, layout.chunk_radius)
 	global["factory-surface"][factory.unit_number] = surface -- surface_name
 	global["surface-structure"][surface_name] = {parent = factory, ticks = 0, connections = {}, chunks_generated = 0, chunks_required = 4*layout.chunk_radius*layout.chunk_radius, finished = false}
@@ -364,6 +350,28 @@ function get_and_delete_health_data(health)
 end
 
 -- FACTORY INTERIOR GENERATION --
+
+-- Daytime values: 0 is eternal night, 1 is regular, 2 is eternal day
+function reset_daytime(surface)
+	local daytime = 0
+	local layout = get_layout(surface)
+	if not layout then return end
+	if layout.is_power_plant then
+		daytime = factorissimo.config.power_plant_daytime
+	else
+		daytime = factorissimo.config.factory_daytime
+	end
+	if daytime == 2 then
+		surface.daytime = 0 -- Midday
+		surface.freeze_daytime(true)
+	elseif daytime == 0 then
+		surface.daytime = 0.5 -- Midnight
+		surface.freeze_daytime(true)
+	else
+		surface.daytime = game.surfaces["nauvis"].daytime
+		surface.freeze_daytime(false)
+	end
+end
 
 function delete_entities(surface)
 	for _, entity in pairs(surface.find_entities({{-1000, -1000},{1000, 1000}})) do
@@ -684,6 +692,7 @@ function try_enter_factory(player)
 			local structure = get_structure(new_surface)
 				if structure.finished then
 					local layout = get_layout(new_surface)
+					reset_daytime(new_surface)
 					player.teleport({layout.entrance_x, layout.entrance_y}, new_surface)
 					return
 				end

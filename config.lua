@@ -19,12 +19,11 @@ factorissimo.config.power_output_limit = "50MW"
 factorissimo.config.power_output_multiplier = 1.0
 
 -- Daytime in factories (2 is always day, 1 is regular day/night, 0 is always night)
--- Changes to this value will not affect existing factories.
--- Default is 2 because that's how it was before I added this config.
+-- After changing configs, load your game and visit all existing factories to automatically update their daytimes
 factorissimo.config.factory_daytime = 2
 
 -- Daytime in power plants (2 is always day, 1 is regular day/night, 0 is always night)
--- Changes to this value will not affect existing power plants.
+-- After changing configs, load your game and visit all existing power plants to automatically update their daytimes
 factorissimo.config.power_plant_daytime = 0
 
 -- How much of the pollution inside arrives outside
