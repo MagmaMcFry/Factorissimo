@@ -544,7 +544,7 @@ end
 script.on_event(defines.events.on_tick, function(event)
 	-- PLAYER TRANSFER
 	for _, player in pairs(game.players) do
-		if player.vehicle == nil then
+		if player.connected and player.character and player.vehicle == nil then
 			try_enter_factory(player)
 			try_leave_factory(player)
 		end
@@ -748,24 +748,19 @@ function dbg(text)
 end
 
 function debug_this(player)
-	local i = 0
-	for surface_name, structure in pairs(get_all_structures()) do
-		i = i+1
-		player.print("(" .. i .. ") Found structure " .. surface_name)
-		for id, entity in pairs(structure) do
-			i = i+1
-			player.print("(" .. i .. ") Found entity " .. (entity.name or "-") .. " as " .. id)
-			if entity.valid then
-				player.print("(" .. i .. ") Entity is valid")
-			else
-				player.print("(" .. i .. ") Entity is invalid")
-			end
+	if player.connected then
+		if player.character then
+			dbg("Player character: " .. player.character.name)
+		else
+			dbg("Player missing character")
 		end
-		
+	else
+		return
 	end
+	local i = 0
 	local entities = player.surface.find_entities_filtered{area = {{player.position.x-3, player.position.y-3},{player.position.x+3, player.position.y+3}}}
 	for _, entity in pairs(entities) do
-		if entity.electric_buffer_size or true then
+		if entity.unit_number then
 			i = i + 1
 			player.print("(" .. i .. ") Entity: " .. entity.name)
 			player.print("(" .. i .. ") Buffer size: " .. (entity.electric_buffer_size or "-"))
