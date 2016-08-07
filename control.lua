@@ -625,6 +625,7 @@ script.on_event(defines.events.on_tick, function(event)
 					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
 					local e5 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe-to-ground"}[1]
 					local e6 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="container"}[1] or parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="logistic-container"}[1]
+                                        e6 = (e6.name:sub(1,10) ~= "warehouse-") and e6 or nil
 					if e3 then
 						if e3.direction == pconn.direction_in then
 							dbg("Connecting inwards belt")
