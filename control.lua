@@ -663,7 +663,7 @@ script.on_event(defines.events.on_tick, function(event)
 						dbg("Connecting chest")
                                                 local e
                                                 if e6.name == "logistic-chest-requester" then
-                                                    e = place_entity(surface, "logistic-chest-active-provider", pconn.inside_x, pconn.inside_y, structure.parent.force)
+                                                    e = place_entity(surface, "logistic-chest-passive-provider", pconn.inside_x, pconn.inside_y, structure.parent.force)
                                                 elseif e6.name == "logistic-chest-active-provider" then
                                                     e = place_entity(surface, "logistic-chest-requester", pconn.inside_x, pconn.inside_y, structure.parent.force)
                                                 elseif e6.name == "logistic-chest-passive-provider" then
