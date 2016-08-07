@@ -498,10 +498,27 @@ end)
 
 -- FACTORY MECHANICS
 
-function transfer_items_chest(from, to) -- from, to are inventories
-	for t, c in pairs(from.get_contents()) do
-		from.remove{name = t, count = to.insert{name = t, count = c}}
+function transfer_items_chest(from, to, inv) -- from, to are inventories, inv is the last recorded inventory
+	local total = {}
+	local inv = inv or {} -- temporary total inventory of both chests
+	for t,c in pairs(to.get_contents()) do
+		total[t] = (total[t] or 0) + c
 	end
+	to.clear()
+	for t, c in pairs(from.get_contents()) do
+		total[t] = (total[t] or 0) + c
+	end
+	from.clear()
+	for t, c in pairs(inv) do
+		total[t] = (total[t] or 0) - c
+	end
+	for t,c in pairs(total) do
+		if c > 0 then
+			from.insert{name = t, count = c}
+			to.insert{name = t, count = c}
+		end
+	end
+	return total
 end
 
 function transfer_items_belt(from, to) -- from, to are belts
@@ -577,9 +594,9 @@ script.on_event(defines.events.on_tick, function(event)
 						-- TRANSFER ITEMS
 						-- This takes up a lot of CPU, but there isn't really a better way to do it :(
 						if sconn.conn_type == "chest" then
-							transfer_items_chest(
+							structure.connections[id].inv = transfer_items_chest(
 								sconn.from.get_inventory(defines.inventory.chest),
-								sconn.to.get_inventory(defines.inventory.chest)
+								sconn.to.get_inventory(defines.inventory.chest), sconn.inv
 							)
 						elseif sconn.conn_type == "belt" then
 							transfer_items_belt(
@@ -607,7 +624,7 @@ script.on_event(defines.events.on_tick, function(event)
 					local e3 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="transport-belt"}[1]
 					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
 					local e5 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe-to-ground"}[1]
-					
+					local e6 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="container"}[1] or parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="logistic-container"}[1]
 					if e3 then
 						if e3.direction == pconn.direction_in then
 							dbg("Connecting inwards belt")
@@ -640,6 +657,12 @@ script.on_event(defines.events.on_tick, function(event)
 								e5.rotatable = false
 								structure.connections[id] = {from = e, to = e5, inside = e, outside = e5, conn_type = "pipe"}
 							end
+						end
+					elseif e6 then
+						dbg("Connecting chest")
+						local e = place_entity(surface, e6.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
+						if e then
+							structure.connections[id] = {from = e, to = e6, inside = e, outside = e6, conn_type = "chest", inv = {}}
 						end
 					end
 				end
