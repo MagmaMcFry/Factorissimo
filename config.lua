@@ -12,7 +12,7 @@ factorissimo.config.power_input_limit = "50MW"
 factorissimo.config.power_input_multiplier = 1.0
 
 -- How much power can leave a power plant
-factorissimo.config.power_output_limit = "50MW"
+factorissimo.config.power_output_limit = "500MW"
 
 -- How much of the power produced in a power plant arrives outside
 -- 1 means lossless transfer, 0 means no power arrives outside at all.
