@@ -495,7 +495,6 @@ script.on_event({defines.events.on_preplayer_mined_item, defines.events.on_robot
 	end
 end)
 
-
 -- FACTORY MECHANICS
 
 function transfer_items_chest(from, to) -- from, to are inventories
@@ -504,16 +503,27 @@ function transfer_items_chest(from, to) -- from, to are inventories
 	end
 end
 
+--possible alternative to transfer_items_chest; try and grab one stack per tick 
+--untested but should work in theory
+function iterate_items_chest(from,to) -- from, to are inventories
+	itemstack = { name = next(from.get_contents()), count = 500 }
+	if itemstack.name ~= nil then 
+		itemstack.count = to.insert(itemstack)
+		if itemstack.count > 0 then
+			from.remove_item(itemstack)
+		end
+	end
+end
+
 function transfer_items_belt(from, to) -- from, to are belts
 	transfer_items_line(from.get_transport_line(1), to.get_transport_line(1))
 	transfer_items_line(from.get_transport_line(2), to.get_transport_line(2))
 end
 
-function transfer_items_line(from, to) -- from, to are lines
-	for t, c in pairs(from.get_contents()) do
-		if to.insert_at(0.75, {name = t, count = 1}) then
-			from.remove_item{name = t, count = 1}
-		end
+function transfer_items_line(from,to)
+	itemstack = { name = next(from.get_contents()), count = 1 } --next will grab first item in line
+	if itemstack.name ~= nil and to.insert_at(0.999999, itemstack) then
+		from.remove_item(itemstack)
 	end
 end
 
@@ -543,12 +553,15 @@ end
 
 script.on_event(defines.events.on_tick, function(event)
 	-- PLAYER TRANSFER
-	for _, player in pairs(game.players) do
-		if player.connected and player.character and player.vehicle == nil then
-			try_enter_factory(player)
-			try_leave_factory(player)
+	if (game.tick%2 <1 ) then
+		for _, player in pairs(game.players) do
+			if player.vehicle == nil and player.walking_state.walking == true then
+				try_enter_factory(player)
+				try_leave_factory(player)
+			end
 		end
 	end
+	
 	-- FACTORY INVENTORY TRANSFER
 	for surface_name, structure in pairs(get_all_structures()) do
 		if structure.parent and structure.parent.valid and structure.finished then -- Don't do anything before the interior has finished generating
@@ -646,7 +659,7 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 			
 			-- TRANSFER POLLUTION
-			if structure.ticks % 20 < 1 then
+			if structure.ticks % 60 < 1 then
 				local exit_pos = get_exit(surface) 
 				for y = -1,1,2 do
 					for x = -1,1,2 do
@@ -694,10 +707,11 @@ function try_enter_factory(player)
 					local layout = get_layout(new_surface)
 					reset_daytime(new_surface)
 					player.teleport({layout.entrance_x, layout.entrance_y}, new_surface)
-					return
+					return true
 				end
 		end
 	end
+	return false
 end
 
 function try_leave_factory(player)
@@ -706,9 +720,10 @@ function try_leave_factory(player)
 		local exit_pos = get_exit(player.surface)
 		if exit_pos then
 			player.teleport({exit_pos.x, exit_pos.y}, exit_pos.surface)
-			return
+			return true
 		end
 	end
+	return false
 end
 
 -- DEBUGGING
@@ -748,19 +763,24 @@ function dbg(text)
 end
 
 function debug_this(player)
-	if player.connected then
-		if player.character then
-			dbg("Player character: " .. player.character.name)
-		else
-			dbg("Player missing character")
-		end
-	else
-		return
-	end
 	local i = 0
+	for surface_name, structure in pairs(get_all_structures()) do
+		i = i+1
+		player.print("(" .. i .. ") Found structure " .. surface_name)
+		for id, entity in pairs(structure) do
+			i = i+1
+			player.print("(" .. i .. ") Found entity " .. (entity.name or "-") .. " as " .. id)
+			if entity.valid then
+				player.print("(" .. i .. ") Entity is valid")
+			else
+				player.print("(" .. i .. ") Entity is invalid")
+			end
+		end
+		
+	end
 	local entities = player.surface.find_entities_filtered{area = {{player.position.x-3, player.position.y-3},{player.position.x+3, player.position.y+3}}}
 	for _, entity in pairs(entities) do
-		if entity.unit_number then
+		if entity.electric_buffer_size or true then
 			i = i + 1
 			player.print("(" .. i .. ") Entity: " .. entity.name)
 			player.print("(" .. i .. ") Buffer size: " .. (entity.electric_buffer_size or "-"))
