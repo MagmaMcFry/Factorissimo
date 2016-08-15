@@ -17,9 +17,41 @@ script.on_init(function()
 	glob_init()
 end)
 
+-- CONFIGURATION CHANGE HANDLER --
+
+script.on_load(function(data)
+-- Currently, only the 0.1.61 changes are processed (the tick counters for valid belt entities)
+--TODO: setup checks on data to make only do this on 0.1.61
+	script.on_event(defines.events.on_tick, function(event) belt_scheduler_configuration(event) end)
+	
+	--set 
+end)
+
+function belt_scheduler_configuration(event)
+--function to update the structure data to have the tick data for the beltscheduler
+	if not game.surfaces[1].valid then return end
+	for surface_name, structure in pairs(get_all_structures()) do
+		for id, sconn in pairs(structure.connections) do
+			--sconn = structure.connections[id]
+			if sconn then
+				if sconn.outside.valid and sconn.inside.valid and sconn.conn_type == "belt" then
+					sconn.l1_next_tick = sconn.l1_next_tick or 0
+					sconn.l2_next_tick =sconn.l2_next_tick or  0
+					sconn.l1_tick_delta = sconn.l1_tick_delta or 60
+					sconn.l2_tick_delta = sconn.l2_tick_delta or 60
+				end
+			end
+		end
+	end
+	--return to the regular on_tick function
+	script.on_event(defines.events.on_tick, function(event) on_tick_handler(event) end)
+end
+
+
 -- SETTINGS --
 
 DEBUG = false
+
 
 LAYOUT = {
 	["small-factory"] = {
@@ -255,6 +287,8 @@ LAYOUT = {
 		}
 	}
 }
+
+
 
 -- FACTORY WORLD ASSIGNMENT --
 
@@ -516,15 +550,43 @@ function iterate_items_chest(from,to) -- from, to are inventories
 end
 
 function transfer_items_belt(from, to) -- from, to are belts
-	transfer_items_line(from.get_transport_line(1), to.get_transport_line(1))
-	transfer_items_line(from.get_transport_line(2), to.get_transport_line(2))
+	return { transfer_items_line(from.get_transport_line(1), to.get_transport_line(1)),
+	transfer_items_line(from.get_transport_line(2), to.get_transport_line(2)) }
 end
 
 function transfer_items_line(from,to)
 	itemstack = { name = next(from.get_contents()), count = 1 } --next will grab first item in line
-	if itemstack.name ~= nil and to.insert_at(0.999999, itemstack) then
+	if itemstack.name ~= nil and to.insert_at(0.85925, itemstack) then
 		from.remove_item(itemstack)
 	end
+end
+
+function bulk_transfer_belt_line(from, to) -- from, to are lines
+	local itemstack = nil
+	local count = 0
+	--local list = from.get_contents()
+	--unwrapped for loop
+	itemstack = {name = next(from.get_contents()),count=1 }
+	if itemstack.name ~= nil and to.insert_at(0.0155,itemstack) then --0.578
+		from.remove_item(itemstack)
+		count=count+1
+		itemstack = {name = next(from.get_contents()),count=1 }
+	end
+	if itemstack.name ~= nil and to.insert_at(0.29675,itemstack) then --0.578
+		from.remove_item(itemstack)
+		count=count+1
+		itemstack = {name = next(from.get_contents()),count=1 }
+	end
+	if itemstack.name ~= nil and to.insert_at(0.578,itemstack) then --0.578
+		from.remove_item(itemstack)
+		count=count+1
+		itemstack = {name = next(from.get_contents()),count=1 }
+	end
+	if itemstack.name ~= nil and to.insert_at(0.85925,itemstack) then -- 0.85925
+		from.remove_item(itemstack)
+		count=count+1
+	end
+	return count
 end
 
 function balance_fluids_pipe(from, to) -- from, to are pipes
@@ -551,7 +613,9 @@ function balance_power(from, to, multiplier)
 	to.energy = to.energy + max_transfer_energy * multiplier
 end
 
-script.on_event(defines.events.on_tick, function(event)
+script.on_event(defines.events.on_tick, function(event) on_tick_handler(event) end)
+
+function on_tick_handler(event)
 	-- PLAYER TRANSFER
 	if (game.tick%2 <1 ) then
 		for _, player in pairs(game.players) do
@@ -587,18 +651,46 @@ script.on_event(defines.events.on_tick, function(event)
 				sconn = structure.connections[id]
 				if sconn then
 					if sconn.outside.valid and sconn.inside.valid then
-						-- TRANSFER ITEMS
-						-- This takes up a lot of CPU, but there isn't really a better way to do it :(
+					
 						if sconn.conn_type == "chest" then
 							transfer_items_chest(
 								sconn.from.get_inventory(defines.inventory.chest),
 								sconn.to.get_inventory(defines.inventory.chest)
 							)
+							
 						elseif sconn.conn_type == "belt" then
-							transfer_items_belt(
-								sconn.from,
-								sconn.to
-							)
+							--process the belt pair on a per lua::transportLine basis
+							if (sconn.l1_next_tick <= game.tick) then	--side '1'
+								count = bulk_transfer_belt_line(--process belt, and get count of items passed
+								sconn.from.get_transport_line(1), 
+								sconn.to.get_transport_line(1))
+								if count==4 then --if we can place all 4 items, assume we need smaller tick delta
+									sconn.l1_tick_delta = sconn.l1_tick_delta - (sconn.l1_tick_delta/20)
+								else --otherwise increase speed
+									sconn.l1_tick_delta = sconn.l1_tick_delta + (sconn.l1_tick_delta/20)
+								end 
+								--boundry checking
+								if (sconn.l1_tick_delta < 1) then sconn.l1_tick_delta = 1 end
+								if (sconn.l1_tick_delta > 60) then sconn.l1_tick_delta = 60 end
+								--assign next tick
+								sconn.l1_next_tick = math.floor(game.tick + sconn.l1_tick_delta)
+							end						
+							if (sconn.l2_next_tick <= game.tick) then   --side '2'
+								count = bulk_transfer_belt_line(--process belt, and get count of items passed
+								sconn.from.get_transport_line(2), 
+								sconn.to.get_transport_line(2))
+								if count==4 then 
+									sconn.l2_tick_delta = sconn.l2_tick_delta - (sconn.l2_tick_delta/20)
+								else
+									sconn.l2_tick_delta = sconn.l2_tick_delta + (sconn.l2_tick_delta/20)
+								end 
+								--boundry checking
+								if (sconn.l2_tick_delta < 1) then sconn.l2_tick_delta = 1 end
+								if (sconn.l2_tick_delta > 60) then sconn.l2_tick_delta = 60 end
+								--assign next tick
+								sconn.l2_next_tick = math.floor(game.tick + sconn.l2_tick_delta)
+							end						
+
 						elseif sconn.conn_type == "pipe" then
 							balance_fluids_pipe(
 								sconn.from,
@@ -628,7 +720,7 @@ script.on_event(defines.events.on_tick, function(event)
 							if e then
 								e.direction = e3.direction
 								e3.rotatable = false
-								structure.connections[id] = {from = e3, to = e, inside = e, outside = e3, conn_type = "belt"}
+								structure.connections[id] = {from = e3, to = e, inside = e, outside = e3, conn_type = "belt", l1_next_tick = game.tick,l2_next_tick = game.tick, l1_tick_delta =60, l2_tick_delta = 60, l1_min = 36, l2_min = 36 }
 							end
 						elseif e3.direction == pconn.direction_out then
 							dbg("Connecting outwards belt")
@@ -636,7 +728,7 @@ script.on_event(defines.events.on_tick, function(event)
 							if e then
 								e.direction = e3.direction
 								e3.rotatable = false
-								structure.connections[id] = {from = e, to = e3, inside = e, outside = e3, conn_type = "belt"}
+								structure.connections[id] = {from = e, to = e3, inside = e, outside = e3, conn_type = "belt", l1_next_tick = game.tick,l2_next_tick = game.tick, l1_tick_delta = 60, l2_tick_delta = 60, l1_min = 36, l2_min = 36}
 							end
 						end
 					elseif e4 then
@@ -677,7 +769,7 @@ script.on_event(defines.events.on_tick, function(event)
 			-- This can theoretically be called repeatedly each tick until the factory is marked finished
 		end
 	end
-end)
+end
 
 -- ENTERING/LEAVING FACTORIES
 
