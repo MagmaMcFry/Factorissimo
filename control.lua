@@ -495,8 +495,68 @@ script.on_event({defines.events.on_preplayer_mined_item, defines.events.on_robot
 	end
 end)
 
+script.on_event({defines.events.on_preplayer_mined_item, defines.events.on_robot_pre_mined}, function(event)
+	local entity = event.entity
+	-- To ensure that no items are lost, transfer items from interior chests
+	-- to the exterior chest just before the exterior chest is mined.
+	for surface_name, structure in pairs(get_all_structures()) do
+		if structure.parent and structure.parent.valid and structure.finished then -- Don't do anything before the interior has finished generating
+			local surface = get_surface(structure.parent) --game.surfaces[surface_name]
+			local parent_surface = structure.parent.surface
+			local layout = get_layout(surface)
+
+			for id, pconn in pairs(layout.possible_connections) do
+				sconn = structure.connections[id]
+				if sconn and sconn.conn_type == "logistic" and sconn.outside.valid and sconn.outside == entity then
+					transfer_items_chest(
+						sconn.inside.get_inventory(defines.inventory.chest),
+						sconn.outside.get_inventory(defines.inventory.chest)
+					)
+				end
+			end
+		end
+	end
+end)
+
+function array_has_value(tab, val)
+	for index, value in ipairs(tab) do
+		if value == val then
+			return true
+		end
+	end
+	return false
+end
 
 -- FACTORY MECHANICS
+
+function transfer_items_logistic(from, to, direction)
+	local item_names = {}
+	for fname, fcount in pairs(from.get_contents()) do
+		if not array_has_value(item_names, fname) then
+			table.insert(item_names, fname)
+		end
+	end
+	for _, fname in ipairs(item_names) do
+		local to_count = 0
+		for tname, tcount in pairs(to.get_contents()) do
+			if tname == fname then
+				to_count = to_count + tcount
+			end
+		end
+
+		local required_count = game.item_prototypes[fname].stack_size
+		if to_count < required_count then
+			local c = required_count - to_count
+			local actual_removed = from.remove{name = fname, count = c}
+			local actual_inserted = to.insert{name = fname, count = actual_removed}
+			-- This should almost never happen, since we are only keeping 1 stack.
+			if actual_inserted - actual_removed > 0 then
+				dbg("overflow by "..tostring(actual_inserted - actual_removed))
+				from.insert{name = fname, count = actual_inserted - actual_removed}
+			end
+		end
+	end
+end
 
 function transfer_items_chest(from, to) -- from, to are inventories
 	for t, c in pairs(from.get_contents()) do
@@ -576,7 +636,12 @@ script.on_event(defines.events.on_tick, function(event)
 					if sconn.outside.valid and sconn.inside.valid then
 						-- TRANSFER ITEMS
 						-- This takes up a lot of CPU, but there isn't really a better way to do it :(
-						if sconn.conn_type == "chest" then
+						if sconn.conn_type == "logistic" then
+							transfer_items_logistic(
+								sconn.from.get_inventory(defines.inventory.chest),
+								sconn.to.get_inventory(defines.inventory.chest)
+							)
+						elseif sconn.conn_type == "chest" then
 							transfer_items_chest(
 								sconn.from.get_inventory(defines.inventory.chest),
 								sconn.to.get_inventory(defines.inventory.chest)
@@ -607,6 +672,7 @@ script.on_event(defines.events.on_tick, function(event)
 					local e3 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="transport-belt"}[1]
 					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
 					local e5 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe-to-ground"}[1]
+					local e6 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="logistic-container"}[1]
 					
 					if e3 then
 						if e3.direction == pconn.direction_in then
@@ -639,6 +705,25 @@ script.on_event(defines.events.on_tick, function(event)
 							if e then
 								e5.rotatable = false
 								structure.connections[id] = {from = e, to = e5, inside = e, outside = e5, conn_type = "pipe"}
+							end
+						end
+					elseif e6 then
+						dbg("Connecting logistics container")
+						local inside_name
+						local direction
+						if e6.name == "logistic-chest-requester" then
+							inside_name = "logistic-chest-passive-provider"
+							direction = "in"
+						else
+							inside_name = "logistic-chest-requester"
+							direction = "out"
+						end
+						local e = place_entity(surface, inside_name, pconn.inside_x, pconn.inside_y, structure.parent.force)
+						if e then
+							if direction == "in" then
+								structure.connections[id] = {from = e6, to = e, inside = e, outside = e6, conn_type = "logistic"}
+							else
+								structure.connections[id] = {from = e, to = e6, inside = e, outside = e6, conn_type = "logistic"}
 							end
 						end
 					end
