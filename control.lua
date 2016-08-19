@@ -34,8 +34,8 @@ function belt_scheduler_configuration(event)
 				if sconn.outside.valid and sconn.inside.valid and sconn.conn_type == "belt" then
 					sconn.l1_next_tick = sconn.l1_next_tick or 0
 					sconn.l2_next_tick =sconn.l2_next_tick or  0
-					sconn.l1_tick_delta = sconn.l1_tick_delta or 60
-					sconn.l2_tick_delta = sconn.l2_tick_delta or 60
+					sconn.l1_tick_delta = sconn.l1_tick_delta or 1
+					sconn.l2_tick_delta = sconn.l2_tick_delta or 1
 				end
 			end
 		end
@@ -651,30 +651,30 @@ function on_tick_handler(event)
 								sconn.from.get_transport_line(1), 
 								sconn.to.get_transport_line(1))
 								if count==4 then --if we can place all 4 items, assume we need smaller tick delta
-									sconn.l1_tick_delta = sconn.l1_tick_delta *0.9
+									sconn.l1_tick_delta = sconn.l1_tick_delta *0.95
 								else --otherwise increase speed
-									sconn.l1_tick_delta = sconn.l1_tick_delta *1.028571428571429
+									sconn.l1_tick_delta = sconn.l1_tick_delta *1.05
 								end 
 								--boundry checking
 								if (sconn.l1_tick_delta < 1) then sconn.l1_tick_delta = 1 end
 								if (sconn.l1_tick_delta > 60) then sconn.l1_tick_delta = 60 end
 								--assign next tick
-								sconn.l1_next_tick = math.ceil(game.tick + sconn.l1_tick_delta)
+								sconn.l1_next_tick = math.floor(game.tick + sconn.l1_tick_delta)
 							end						
 							if (sconn.l2_next_tick <= game.tick) then   --side '2'
 								count = bulk_transfer_belt_line(--process belt, and get count of items passed
 								sconn.from.get_transport_line(2), 
 								sconn.to.get_transport_line(2))
 								if count==4 then 
-									sconn.l2_tick_delta = sconn.l2_tick_delta *0.9
+									sconn.l2_tick_delta = sconn.l2_tick_delta *0.95
 								else
-									sconn.l2_tick_delta = sconn.l2_tick_delta *1.028571428571429
+									sconn.l2_tick_delta = sconn.l2_tick_delta *1.05
 								end 
 								--boundry checking
 								if (sconn.l2_tick_delta < 1) then sconn.l2_tick_delta = 1 end
 								if (sconn.l2_tick_delta > 60) then sconn.l2_tick_delta = 60 end
 								--assign next tick
-								sconn.l2_next_tick = math.ceil(game.tick + sconn.l2_tick_delta)
+								sconn.l2_next_tick = math.floor(game.tick + sconn.l2_tick_delta)
 							end
 						elseif sconn.conn_type == "pipe" then
 							balance_fluids_pipe(
@@ -705,7 +705,7 @@ function on_tick_handler(event)
 							if e then
 								e.direction = e3.direction
 								e3.rotatable = false
-								structure.connections[id] = {from = e3, to = e, inside = e, outside = e3, conn_type = "belt", l1_next_tick = 0, l2_next_tick = 0, l1_tick_delta = 36, l2_tick_delta}
+								structure.connections[id] = {from = e3, to = e, inside = e, outside = e3, conn_type = "belt", l1_next_tick = 0, l2_next_tick = 0, l1_tick_delta = 1, l2_tick_delta=1}
 							end
 						elseif e3.direction == pconn.direction_out then
 							dbg("Connecting outwards belt")
@@ -713,7 +713,7 @@ function on_tick_handler(event)
 							if e then
 								e.direction = e3.direction
 								e3.rotatable = false
-								structure.connections[id] = {from = e, to = e3, inside = e, outside = e3, conn_type = "belt", l1_next_tick = 0, l2_next_tick = 0, l1_tick_delta = 36, l2_tick_delta}
+								structure.connections[id] = {from = e, to = e3, inside = e, outside = e3, conn_type = "belt", l1_next_tick = 0, l2_next_tick = 0, l1_tick_delta = 1, l2_tick_delta=1}
 							end
 						end
 					elseif e4 then
