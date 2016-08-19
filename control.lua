@@ -2,6 +2,7 @@ if not factorissimo then factorissimo = {} end
 if not factorissimo.config then factorissimo.config = {} end
 
 require("config")
+require("updates")
 
 -- GLOBALS --
 
@@ -15,6 +16,11 @@ end
 
 script.on_init(function()
 	glob_init()
+	init_update_system()
+end)
+
+script.on_configuration_changed(function(configuration_changed_data)
+	do_required_updates()
 end)
 
 -- SETTINGS --
@@ -422,6 +428,9 @@ function build_factory_interior(factory, surface, layout, structure)
 	end
 	for _, rect in pairs(layout.rectangles) do
 		add_tile_rect(tiles, rect.tile, rect.x1, rect.y1, rect.x2, rect.y2)
+	end
+	for _, pconn in pairs(layout.possible_connections) do
+		add_tile_rect(tiles, "factory-entrance", pconn.inside_x, pconn.inside_y, pconn.inside_x+1, pconn.inside_y+1)
 	end
 	surface.set_tiles(tiles)
 	if layout.is_power_plant then
