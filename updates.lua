@@ -2,14 +2,22 @@
 
 local function update01()
 	-- Make factory port tiles walkable
-	if global["surface-layout"] then
-		for surface_name, layout in pairs(global["surface-layout"]) do
+	if global["surface-layout"] and global["surface-structure"] then
+		for surface_name, _ in pairs(global["surface-structure"]) do -- Don't iterate over surface-layout because we're changing that
+			local layout = global["surface-layout"][surface_name]
 			local surface = game.surfaces[surface_name]
 			local tiles = {}
 			for _, pconn in pairs(layout.possible_connections) do
+				-- Add walkable tiles to inside ports
 				tiles[1+#tiles] = {name = "factory-entrance", position = {pconn.inside_x, pconn.inside_y}}
 			end
 			surface.set_tiles(tiles)
+			-- Update layout
+			if layout.is_power_plant then
+				global["surface-layout"][surface_name] = layouts()["small-power-plant"]
+			else
+				global["surface-layout"][surface_name] = layouts()["small-factory"]
+			end
 		end
 	end
 end

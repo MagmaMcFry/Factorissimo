@@ -378,8 +378,8 @@ script.on_event(defines.events.on_tick, function(event)
 				elseif structure.ticks % 60 < 1 then
 					-- CREATE CONNECTION
 					
-					local px = pconn.outside_x + structure.parent.position.x+0.5
-					local py = pconn.outside_y + structure.parent.position.y+0.5
+					local px = pconn.outside_x + structure.parent.position.x
+					local py = pconn.outside_y + structure.parent.position.y
 					
 					local e3 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="transport-belt"}[1]
 					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
