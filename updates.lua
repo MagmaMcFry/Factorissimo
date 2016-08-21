@@ -18,6 +18,11 @@ local function update01()
 			else
 				global["surface-layout"][surface_name] = layouts()["small-factory"]
 			end
+			-- Reset connections
+			local structure = global["surface-structure"][surface_name]
+			if structure and structure.parent and structure.parent.valid then
+				check_connections(structure.parent)
+			end
 		end
 	end
 end

@@ -4,6 +4,7 @@ if not factorissimo.config then factorissimo.config = {} end
 require("config")
 require("updates")
 require("layouts")
+require("connections")
 
 -- GLOBALS --
 
@@ -13,6 +14,7 @@ function glob_init()
 	global["surface-layout"] = global["surface-layout"] or {}
 	global["surface-exit"] = global["surface-exit"] or {}
 	global["health-data"] = global["health-data"] or {}
+	init_connection_structure()
 end
 
 script.on_init(function()
@@ -21,6 +23,7 @@ script.on_init(function()
 end)
 
 script.on_configuration_changed(function(configuration_changed_data)
+	glob_init()
 	do_required_updates()
 end)
 
@@ -55,11 +58,7 @@ function has_surface(factory)
 end
 
 function get_surface(factory)
-	if global["factory-surface"][factory.unit_number] then
-		return global["factory-surface"][factory.unit_number]
-	else
-		return nil
-	end
+	return global["factory-surface"][factory.unit_number]
 end
 
 function is_factory(surface)
@@ -252,16 +251,26 @@ end
 function on_picked_up_factory(factory)
 	save_health_data(factory)
 	local structure = get_structure(get_surface(factory))
-	for _, sconn in pairs(structure.connections) do
-		if sconn.inside.valid then sconn.inside.destroy() end
+	for _, data in pairs(structure.connections) do
+		destroy_connection(data)
 	end
 	structure.connections = {}
 end
 
 script.on_event({defines.events.on_built_entity, defines.events.on_robot_built_entity}, function(event)
-	local factory = event.created_entity
-	if LAYOUT[factory.name] then
-		on_built_factory(factory)
+	local entity = event.created_entity
+	if LAYOUT[entity.name] then -- entity is factory
+		on_built_factory(entity)
+		check_connections(entity)
+	else
+		-- Entity needs to update factory connections
+		local entities = entity.surface.find_entities_filtered{area = {{entity.position.x-5, entity.position.y-5},{entity.position.x+5, entity.position.y+5}}} -- Generous search radius, maybe too generous
+		for _, entity2 in pairs(entities) do
+			if has_surface(entity2) then
+				-- entity2 is factory
+				check_connections(entity2)
+			end
+		end
 	end
 end)
 
@@ -272,50 +281,44 @@ script.on_event({defines.events.on_preplayer_mined_item, defines.events.on_robot
 	end
 end)
 
+script.on_event({defines.events.on_entity_died}, function(event)
+	local factory = event.entity
+	if LAYOUT[factory.name] then
+		local structure = get_structure(get_surface(factory))
+		for _, data in pairs(structure.connections) do
+			destroy_connection(data)
+		end
+		structure.connections = {}
+	end
+end)
+
 
 -- FACTORY MECHANICS
-
-function transfer_items_chest(from, to) -- from, to are inventories
-	for t, c in pairs(from.get_contents()) do
-		from.remove{name = t, count = to.insert{name = t, count = c}}
-	end
-end
-
-function transfer_items_belt(from, to) -- from, to are belts
-	transfer_items_line(from.get_transport_line(1), to.get_transport_line(1))
-	transfer_items_line(from.get_transport_line(2), to.get_transport_line(2))
-end
-
-function transfer_items_line(from, to) -- from, to are lines
-	for t, c in pairs(from.get_contents()) do
-		if to.insert_at(0.75, {name = t, count = 1}) then
-			from.remove_item{name = t, count = 1}
-		end
-	end
-end
-
-function balance_fluids_pipe(from, to) -- from, to are pipes
-	fluid1 = from.fluidbox[1]
-	fluid2 = to.fluidbox[1]
-	if fluid1 and fluid2 then
-		if fluid1.type == fluid2.type then
-			local amount = fluid1.amount + fluid2.amount
-			local temperature = (fluid1.amount*fluid1.temperature+fluid2.amount*fluid2.temperature)/amount -- Total temperature balance
-			from.fluidbox[1] = {type = fluid1.type, amount=amount/2, temperature=temperature}
-			to.fluidbox[1] = {type = fluid1.type, amount=amount/2, temperature=temperature}
-		end
-	elseif fluid1 or fluid2 then
-		fluid = fluid1 or fluid2
-		fluid.amount = fluid.amount/2
-		from.fluidbox[1] = fluid
-		to.fluidbox[1] = fluid
-	end
-end
 
 function balance_power(from, to, multiplier)
 	local max_transfer_energy = math.min(from.energy, to.electric_buffer_size - to.energy)
 	from.energy = from.energy - max_transfer_energy
 	to.energy = to.energy + max_transfer_energy * multiplier
+end
+
+function check_connections(factory)
+	local surface = get_surface(factory)
+	local structure = get_structure(surface)
+	local layout = get_layout(surface)
+	local parent_surface = factory.surface
+	
+	for id, pconn in pairs(layout.possible_connections) do
+		data = structure.connections[id]
+		if data and not data.__valid then
+			data = nil
+			structure.connections[id] = nil
+		end
+		if data == nil then
+			local fx = structure.parent.position.x
+			local fy = structure.parent.position.y
+			structure.connections[id] = test_for_connection(parent_surface, factory, surface, pconn, fx, fy)
+		end
+	end
 end
 
 script.on_event(defines.events.on_tick, function(event)
@@ -326,7 +329,11 @@ script.on_event(defines.events.on_tick, function(event)
 			try_leave_factory(player)
 		end
 	end
-	-- FACTORY INVENTORY TRANSFER
+	
+	-- CONNECTIONS
+	update_pending_connections()
+
+	-- BASE FACTORY MECHANICS
 	for surface_name, structure in pairs(get_all_structures()) do
 		if structure.parent and structure.parent.valid and structure.finished then -- Don't do anything before the interior has finished generating
 		
@@ -345,85 +352,8 @@ script.on_event(defines.events.on_tick, function(event)
 				end
 			end
 			
-			-- TRANSFER ITEMS
-			
-			for id, pconn in pairs(layout.possible_connections) do
-				sconn = structure.connections[id]
-				if sconn then
-					if sconn.outside.valid and sconn.inside.valid then
-						-- TRANSFER ITEMS
-						-- This takes up a lot of CPU, but there isn't really a better way to do it :(
-						if sconn.conn_type == "chest" then
-							transfer_items_chest(
-								sconn.from.get_inventory(defines.inventory.chest),
-								sconn.to.get_inventory(defines.inventory.chest)
-							)
-						elseif sconn.conn_type == "belt" then
-							transfer_items_belt(
-								sconn.from,
-								sconn.to
-							)
-						elseif sconn.conn_type == "pipe" then
-							balance_fluids_pipe(
-								sconn.from,
-								sconn.to
-							)
-						end
-					else
-						-- DELETE CONNECTION
-						if sconn.inside.valid then sconn.inside.destroy() end
-						structure.connections[id] = nil
-					end
-					
-				elseif structure.ticks % 60 < 1 then
-					-- CREATE CONNECTION
-					
-					local px = pconn.outside_x + structure.parent.position.x
-					local py = pconn.outside_y + structure.parent.position.y
-					
-					local e3 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="transport-belt"}[1]
-					local e4 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe"}[1]
-					local e5 = parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}, type="pipe-to-ground"}[1]
-					
-					if e3 then
-						if e3.direction == pconn.direction_in then
-							dbg("Connecting inwards belt")
-							local e = place_entity(surface, e3.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
-							if e then
-								e.direction = e3.direction
-								e3.rotatable = false
-								structure.connections[id] = {from = e3, to = e, inside = e, outside = e3, conn_type = "belt"}
-							end
-						elseif e3.direction == pconn.direction_out then
-							dbg("Connecting outwards belt")
-							local e = place_entity(surface, e3.name, pconn.inside_x, pconn.inside_y, structure.parent.force)
-							if e then
-								e.direction = e3.direction
-								e3.rotatable = false
-								structure.connections[id] = {from = e, to = e3, inside = e, outside = e3, conn_type = "belt"}
-							end
-						end
-					elseif e4 then
-						dbg("Connecting pipe")
-						local e = place_entity(surface, e4.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
-						if e then
-							structure.connections[id] = {from = e, to = e4, inside = e, outside = e4, conn_type = "pipe"}
-						end
-					elseif e5 then
-						if e5.direction == pconn.direction_in then
-							dbg("Connecting pipe to ground")
-							local e = place_entity(surface, e5.name, pconn.inside_x, pconn.inside_y, structure.parent.force, pconn.direction_in)
-							if e then
-								e5.rotatable = false
-								structure.connections[id] = {from = e, to = e5, inside = e, outside = e5, conn_type = "pipe"}
-							end
-						end
-					end
-				end
-			end
-			
 			-- TRANSFER POLLUTION
-			if structure.ticks % 20 < 1 then
+			if structure.ticks % 60 < 1 then
 				local exit_pos = get_exit(surface) 
 				for y = -1,1,2 do
 					for x = -1,1,2 do
@@ -435,7 +365,7 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 		elseif structure.parent and structure.parent.valid and structure.chunks_generated == structure.chunks_required then
 			-- We need to wait until the factory interior surface is generated with default worldgen, then replace it with our own interior
-			local surface = game.surfaces[surface_name]
+			local surface = get_surface(structure.parent)
 			local layout = get_layout(surface)
 			build_factory_interior(structure.parent, surface, layout, structure)
 			-- This can theoretically be called repeatedly each tick until the factory is marked finished
