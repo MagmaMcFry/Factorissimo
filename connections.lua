@@ -164,11 +164,11 @@ remote.call("factorissimo_connections", "register_connection_type",
 				-- data.belt_speed is in tiles per tick
 				-- 9/32 tiles per item
 				-- Wait for amount of ticks per item
-				if active then
+				--if active then
 					return (9/32)/data.belt_speed
-				else
-					return 3*(9/32)/data.belt_speed
-				end
+				--else
+				--	return 3*(9/32)/data.belt_speed
+				--end
 			else
 				return false -- The belts are broken, so we destroy the connection.
 			end
