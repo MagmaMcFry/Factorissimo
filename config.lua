@@ -30,3 +30,12 @@ factorissimo.config.power_plant_daytime = 0
 -- 1 means all pollution inside is transferred outside, 0 means all pollution inside is destroyed.
 -- 2 means pollution is doubled!
 factorissimo.config.pollution_multiplier = 1.0
+
+-- Factories inside other factories!
+-- 0 means no recursion at all is allowed
+-- 1 means that buildings only work inside higher-tier buildings (more factory tiers will be released in future updates)
+-- 2 means that buildings only work inside higher-tier or equal-tier buildings
+-- 3 means you can place any building inside any other!
+-- Note: Changing this config will not prevent you from *placing* factories anywhere. However if you place factories where they are not supposed to be, they will simply not work and not connect to anything, and you won't be able to enter them.
+-- Another note: Changing this config mid-game will not disconnect preexisting wrongly nested factories, but it will prevent you from entering them. To be able to enter such interior factories again, just mine them and place them back down in the overworld.
+factorissimo.config.recursion = 3

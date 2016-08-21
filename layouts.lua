@@ -3,7 +3,7 @@
 local LAYOUT = {
 	["small-factory"] = {
 		name = "small-factory",
-		tier = 1,
+		tier = 0,
 		chunk_radius = 1,
 		is_power_plant = false,
 		entrance_x = 0,
@@ -121,7 +121,7 @@ local LAYOUT = {
 	},
 	["small-power-plant"] = {
 		name = "small-power-plant",
-		tier = 1,
+		tier = 0,
 		chunk_radius = 1,
 		is_power_plant = true,
 		entrance_x = 0,

@@ -313,7 +313,7 @@ function check_connections(factory)
 			data = nil
 			structure.connections[id] = nil
 		end
-		if data == nil then
+		if data == nil and factory_placement_valid(surface, parent_surface) then
 			local fx = structure.parent.position.x
 			local fy = structure.parent.position.y
 			structure.connections[id] = test_for_connection(parent_surface, factory, surface, pconn, fx, fy)
@@ -373,6 +373,20 @@ script.on_event(defines.events.on_tick, function(event)
 	end
 end)
 
+-- RECURSION
+
+function factory_placement_valid(inner_surface, outer_surface)
+	if is_factory(inner_surface) and is_factory(outer_surface) then
+		local inner_tier = get_layout(inner_surface).tier or 0
+		local outer_tier = get_layout(outer_surface).tier or 0
+		if factorissimo.config.recursion == 0 then return false end
+		if factorissimo.config.recursion == 1 then return inner_tier < outer_tier end
+		if factorissimo.config.recursion == 2 then return inner_tier <= outer_tier end
+		return true
+	end
+	return true
+end
+
 -- ENTERING/LEAVING FACTORIES
 
 function get_factory_beneath(player)
@@ -395,7 +409,7 @@ function try_enter_factory(player)
 	local factory = get_factory_beneath(player)
 	if factory and math.abs(factory.position.x-player.position.x) < 0.6 then
 		local new_surface = get_surface(factory)
-		if new_surface then
+		if new_surface and factory_placement_valid(new_surface, factory.surface) then
 			local structure = get_structure(new_surface)
 				if structure.finished then
 					local layout = get_layout(new_surface)
