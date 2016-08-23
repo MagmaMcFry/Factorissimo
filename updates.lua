@@ -21,7 +21,7 @@ local function update01()
 			-- Reset connections
 			local structure = global["surface-structure"][surface_name]
 			if structure and structure.parent and structure.parent.valid then
-				check_connections(structure.parent)
+				mark_connections_dirty(structure.parent)
 			end
 		end
 	end

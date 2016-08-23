@@ -38,12 +38,12 @@ local LAYOUT = layouts()
 function create_surface(factory, layout)
 	local surface_name = "Inside factory " .. factory.unit_number
 	local surface = game.create_surface(surface_name, {width = 64*layout.chunk_radius-62, height = 64*layout.chunk_radius-62})
-	reset_daytime(surface)
 	surface.request_to_generate_chunks({0, 0}, layout.chunk_radius)
 	global["factory-surface"][factory.unit_number] = surface -- surface_name
 	global["surface-structure"][surface_name] = {parent = factory, ticks = 0, connections = {}, chunks_generated = 0, chunks_required = 4*layout.chunk_radius*layout.chunk_radius, finished = false}
 	global["surface-layout"][surface_name] = layout
 	global["surface-exit"][surface_name] = {x = factory.position.x+layout.exit_x, y = factory.position.y+layout.exit_y, surface = factory.surface}
+	reset_daytime(surface)
 end
 
 function connect_factory_to_existing_surface(factory, surface)
@@ -229,6 +229,7 @@ function on_built_factory(factory)
 				factory[k] = v
 			end
 		end
+		mark_connections_dirty(factory)
 
 	elseif not has_surface(factory) then -- Should always be the case, but just in case
 		dbg("Generating new factory interior")
@@ -261,14 +262,13 @@ script.on_event({defines.events.on_built_entity, defines.events.on_robot_built_e
 	local entity = event.created_entity
 	if LAYOUT[entity.name] then -- entity is factory
 		on_built_factory(entity)
-		check_connections(entity)
 	else
 		-- Entity needs to update factory connections
 		local entities = entity.surface.find_entities_filtered{area = {{entity.position.x-5, entity.position.y-5},{entity.position.x+5, entity.position.y+5}}} -- Generous search radius, maybe too generous
 		for _, entity2 in pairs(entities) do
 			if has_surface(entity2) then
 				-- entity2 is factory
-				check_connections(entity2)
+				mark_connections_dirty(entity2)
 			end
 		end
 	end
@@ -301,17 +301,26 @@ function balance_power(from, to, multiplier)
 	to.energy = to.energy + max_transfer_energy * multiplier
 end
 
-function check_connections(factory)
+function mark_connections_dirty(factory)
 	local surface = get_surface(factory)
+	if not surface then return end
 	local structure = get_structure(surface)
-	local layout = get_layout(surface)
-	local parent_surface = factory.surface
-	
+	if not structure then return end
+	structure.connections_dirty = true
+end
+
+local function check_connections(factory, surface, structure, layout, parent_surface)
 	for id, pconn in pairs(layout.possible_connections) do
 		data = structure.connections[id]
-		if data and not data.__valid then
-			data = nil
-			structure.connections[id] = nil
+		
+		if data then
+			if not update_connection(data) then
+				destroy_connection(data)
+			end
+			if not data.__valid then
+				data = nil
+				structure.connections[id] = nil
+			end
 		end
 		if data == nil and factory_placement_valid(surface, parent_surface) then
 			local fx = structure.parent.position.x
@@ -363,12 +372,22 @@ script.on_event(defines.events.on_tick, function(event)
 					end
 				end
 			end
+			
+			-- CHECK FOR NEW CONNECTIONS
+			if structure.connections_dirty then
+				structure.connections_dirty = false
+				check_connections(structure.parent, surface, structure, layout, parent_surface)
+			end
 		elseif structure.parent and structure.parent.valid and structure.chunks_generated == structure.chunks_required then
 			-- We need to wait until the factory interior surface is generated with default worldgen, then replace it with our own interior
 			local surface = get_surface(structure.parent)
 			local layout = get_layout(surface)
 			build_factory_interior(structure.parent, surface, layout, structure)
 			-- This can theoretically be called repeatedly each tick until the factory is marked finished
+			if structure.finished then
+				-- Check connections once the factory is finished
+				mark_connections_dirty(structure.parent)
+			end
 		end
 	end
 end)

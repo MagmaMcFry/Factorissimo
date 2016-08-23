@@ -1,6 +1,6 @@
 local connection_types = {}
 
-local function update_connection(data)
+function update_connection(data)
 	if data.__valid and connection_types[data.__type] then
 		return connection_types[data.__type].on_update(data)
 	else
@@ -20,7 +20,7 @@ function init_connection_structure()
 end
 
 local function add_connection_to_queue(data)
-	local current_pos = game.tick % MAX_PENDING_TIME
+	local current_pos = (game.tick+1) % MAX_PENDING_TIME
 	table.insert(global["connections"][current_pos], data)
 end
 
@@ -214,7 +214,9 @@ register_connection_type("belt",
 		-- Arguments:
 		--   data: The connection data table created in accepts_outside_entity.
 		on_destroy = function(data)
-			if data.inside.valid then data.inside.destroy() end
+			if data.inside.valid then
+				data.inside.destroy()
+			end
 		end,
 	}
 )
