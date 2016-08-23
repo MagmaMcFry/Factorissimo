@@ -75,23 +75,59 @@ function destroy_connection(data)
 	end
 end
 
--- Interface to allow mods to add custom connection types.
--- Methods in this interface should be called, once per connection type, directly from control.lua or dependencies, NOT from inside any callbacks such as on_init or on_event.
+---- Interface to allow mods to add custom connection types.
+---- This interface should be used, once per connection type, directly from control.lua or dependencies, NOT from inside any callbacks such as on_init or on_event.
+
+---- HOW TO USE THIS API:
+---- First create an interface like this:
+
+--remote.add_interface("unique_interface_name_here",
+--	{
+--		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
+--			.....
+--		end,
+--		on_update = function(data)
+--			.....
+--		end,
+--		on_destroy = function(data)
+--			.....
+--		end
+--	}
+
+---- Then register your interface using the API, like this:
+
+--remote.call("factorissimo_connections", "register_connection_type", "type_name_here", "unique_interface_name_here")
+
 remote.add_interface("factorissimo_connections",
 	{
-		["register_connection_type"] = function(type, methods)
+		register_connection_type = function(type, interface)
 			-- See below for calls
 			connection_types[type] = {
-				accepts_outside_entity = methods.accepts_outside_entity or function() return nil; end,
-				on_update = methods.on_update or function() return nil; end,
-				on_destroy = methods.on_destroy or function() return; end,
+				accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
+					return remote.call(interface, "accepts_outside_entity", outside_entity, factory, interior, conn_specs) 
+				end,
+				on_update = function(data)
+					return remote.call(interface, "on_update", data)
+				end,
+				on_destroy = function(data)
+					return remote.call(interface, "on_destroy", data)
+				end,
 			}
 		end,
 	}
 )
 
-remote.call("factorissimo_connections", "register_connection_type",
-	"belt",
+
+
+-- This function is for local use only
+
+local function register_connection_type(type, methods)
+	connection_types[type] = methods
+end
+
+--remote.call("factorissimo_connections", "register_connection_type", "belt", "factorissimo_belt")
+--remote.add_interface("factorissimo_belt", 
+register_connection_type("belt",
 	{
 	
 		-- This function is given an entity that was placed on an outside port and must decide whether the entity is acceptable for this connection type.
@@ -183,8 +219,9 @@ remote.call("factorissimo_connections", "register_connection_type",
 	}
 )
 
-remote.call("factorissimo_connections", "register_connection_type",
-	"pipe",
+--remote.call("factorissimo_connections", "register_connection_type", "pipe", "factorissimo_pipe")
+--remote.add_interface("factorissimo_pipe", 
+register_connection_type("pipe",
 	{	
 		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
 			local inside_entity = nil
