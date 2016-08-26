@@ -98,6 +98,10 @@ end
 
 --remote.call("factorissimo_connections", "register_connection_type", "type_name_here", "unique_interface_name_here")
 
+-- Important notice: Remember that people may disable your mod from their save, in which case your connection type handler is no longer available for Factorissimo.
+-- Your responsibility is to make sure that nothing breaks in case this happens. For example you should not make your connection entities unminable, otherwise they cannot be removed after your mod is disabled.
+
+
 remote.add_interface("factorissimo_connections",
 	{
 		register_connection_type = function(type, interface)
