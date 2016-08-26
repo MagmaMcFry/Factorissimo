@@ -217,8 +217,7 @@ register_connection_type("belt",
 		on_destroy = function(data)
 			if data.inside.valid then
 				data.inside.destroy()
-			end
-			if data.outside.valid then
+			elseif data.outside.valid then
 				data.outside.destroy()
 			end
 		end,
@@ -272,8 +271,11 @@ register_connection_type("pipe",
 		end,
 		
 		on_destroy = function(data)
-			if data.inside.valid then data.inside.destroy() end
-			if data.outside.valid then data.outside.destroy() end
+			if data.inside.valid then
+				data.inside.destroy()
+			elseif data.outside.valid then
+				data.outside.destroy()
+			end
 		end,
 	}
 )
