@@ -1,9 +1,17 @@
 
 local function update02()
-	-- Change how layouts are stored internally
-	for surface_name, _ in pairs(global["surface-structure"]) do
+	for surface_name, structure in pairs(global["surface-structure"]) do
+		-- Change how layouts are stored internally
 		local layout = global["surface-layout"][surface_name]
 		global["surface-layout"][surface_name] = layout.name
+		-- Make inside connections minable
+		for _, sconn in pairs(structure.connections) do
+			if (sconn.__type == "pipe" or sconn.__type == "belt") and sconn.inside.valid then
+				sconn.inside.minable = true
+				sconn.inside.destructible = true
+				sconn.inside.operable = true
+			end
+		end
 	end
 end
 

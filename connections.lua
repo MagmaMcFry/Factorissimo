@@ -157,9 +157,6 @@ register_connection_type("belt",
 			if not inside_entity then return nil end
 			outside_entity.rotatable = false
 			inside_entity.rotatable = false
-			inside_entity.minable = false
-			inside_entity.destructible = false
-			inside_entity.operable = false
 			data = {
 				outside = outside_entity, inside = inside_entity,
 				belt_speed = outside_entity.prototype.belt_speed
@@ -217,6 +214,9 @@ register_connection_type("belt",
 			if data.inside.valid then
 				data.inside.destroy()
 			end
+			if data.outside.valid then
+				data.outside.destroy()
+			end
 		end,
 	}
 )
@@ -238,9 +238,6 @@ register_connection_type("pipe",
 			else
 				return nil
 			end
-			inside_entity.minable = false
-			inside_entity.destructible = false
-			inside_entity.operable = false
 			data = {
 				outside = outside_entity, inside = inside_entity,
 			}
@@ -272,6 +269,7 @@ register_connection_type("pipe",
 		
 		on_destroy = function(data)
 			if data.inside.valid then data.inside.destroy() end
+			if data.outside.valid then data.outside.destroy() end
 		end,
 	}
 )
