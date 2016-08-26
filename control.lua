@@ -41,7 +41,7 @@ function create_surface(factory, layout)
 	surface.request_to_generate_chunks({0, 0}, layout.chunk_radius)
 	global["factory-surface"][factory.unit_number] = surface -- surface_name
 	global["surface-structure"][surface_name] = {parent = factory, ticks = 0, connections = {}, chunks_generated = 0, chunks_required = 4*layout.chunk_radius*layout.chunk_radius, finished = false}
-	global["surface-layout"][surface_name] = layout
+	global["surface-layout"][surface_name] = layout.name
 	global["surface-exit"][surface_name] = {x = factory.position.x+layout.exit_x, y = factory.position.y+layout.exit_y, surface = factory.surface}
 	reset_daytime(surface)
 end
@@ -78,11 +78,19 @@ function get_all_structures()
 end
 
 function get_layout(surface)
-	return global["surface-layout"][surface.name]
+	if global["surface-layout"][surface.name] then
+		return LAYOUT[global["surface-layout"][surface.name]]
+	else
+		return nil
+	end
 end
 
 function get_layout_by_name(surface_name)
-	return global["surface-layout"][surface_name]
+	if global["surface-layout"][surface_name] then
+		return LAYOUT[global["surface-layout"][surface_name]]
+	else
+		return nil
+	end
 end
 
 function get_exit(surface)

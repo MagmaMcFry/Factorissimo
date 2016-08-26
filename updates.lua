@@ -1,4 +1,11 @@
 
+local function update02()
+	-- Change how layouts are stored internally
+	for surface_name, _ in pairs(global["surface-structure"]) do
+		local layout = global["surface-layout"][surface_name]
+		global["surface-layout"][surface_name] = layout.name
+	end
+end
 
 local function update01()
 	-- Make factory port tiles walkable
@@ -28,7 +35,7 @@ local function update01()
 end
 
 function init_update_system()
-		global.update_version = 1 -- Latest update
+		global.update_version = 2 -- Latest update
 end
 
 function do_required_updates()
@@ -36,5 +43,9 @@ function do_required_updates()
 	if global.update_version < 1 then
 		update01()
 		global.update_version = 1
+	end
+	if global.update_version < 2 then
+		update02()
+		global.update_version = 2
 	end
 end
