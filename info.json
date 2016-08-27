@@ -1,9 +1,9 @@
 {
   "name": "Factorissimo",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "title": "Factorissimo",
   "author": "MagmaMcFry",
-  "description": "I heard you like building factories. This mod adds a factory building you can walk into and build a part of your factory inside. You can move items and liquids in and out, processing them inside the building. You can pick up the entire building and set it down somewhere else, preserving its contents. You can even place factory buildings inside other factory buildings.",
-  "factorio_version": "0.13.0",
-  "dependencies": ["base >= 0.13.0"]
+  "description": "Adds factory buildings you can walk into and build parts of your factory inside.",
+  "factorio_version": "0.14",
+  "dependencies": ["base >= 0.14.0"]
 }
