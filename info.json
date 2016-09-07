@@ -1,9 +1,9 @@
 {
   "name": "Factorissimo",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "title": "Factorissimo",
   "author": "MagmaMcFry",
   "description": "Adds factory buildings you can walk into and build parts of your factory inside.",
-  "factorio_version": "0.14",
-  "dependencies": ["base >= 0.14.0"]
+  "factorio_version": "0.13",
+  "dependencies": ["base >= 0.13.0"]
 }

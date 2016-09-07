@@ -145,8 +145,8 @@ register_connection_type("belt",
 		--     inside_pos: The half-integer coordinates of the inside port position on the inside surface, available as interior.
 		--     direction_in: Inwards-pointing direction.
 		--     direction_out: Outwards-pointing direction. Opposite of direction_in, for your convenience.
-		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
-			local inside_entity = nil
+		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)            
+            local inside_entity = nil
 			local inwards = false
 			if outside_entity.type == "transport-belt" then
 				if outside_entity.direction == conn_specs.direction_in or outside_entity.direction == conn_specs.direction_out then
@@ -274,6 +274,175 @@ register_connection_type("pipe",
 			if data.inside.valid then
 				data.inside.destroy()
 			elseif data.outside.valid then
+				data.outside.destroy()
+			end
+		end,
+	}
+)
+
+register_connection_type("requester-chest",
+	{
+		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
+			local inside_entity = nil
+			local inwards = false
+			if (outside_entity.type == "logistic-container" and outside_entity.request_slot_count > 0) then
+				inside_entity = interior.create_entity{name = "logistic-chest-passive-provider", position = conn_specs.inside_pos, force = factory.force, direction = outside_entity.direction}
+				inwards = (outside_entity.direction == conn_specs.direction_in)
+			else
+				return nil
+			end
+			if not inside_entity then 
+                return nil 
+            end
+			data = {
+				outside = outside_entity, inside = inside_entity,
+			}
+			return data
+		end,
+        
+        on_update = function(data)
+            if data.outside.valid and data.inside.valid then
+				local out_request_dict = {}
+                local slot_count = data.outside.request_slot_count 
+                if slot_count > 0 then
+                    request_table = {}
+                    for i = 1, slot_count do
+                        local slot = data.outside.get_request_slot(i)
+                        if slot ~= nil then
+                            request_table[slot.name] = {number=i, count=slot.count}
+                        end
+                    end
+                    
+                    local inv_in = data.inside.get_inventory(1)
+                    local inv_out = data.outside.get_inventory(1)
+                    local active = false
+                    
+                    for item, inf in pairs(request_table) do                       
+                        local content_in = inv_in.get_contents()[item]
+                        if content_in == nil then
+                            local content_out = inv_out.get_contents()[item]
+                            if content_out ~= nil then
+                                itemstack = {name = item, count = content_out}
+                                if inv_in.can_insert(itemstack) then
+                                    inv_in.insert(itemstack)
+                                    inv_out.remove(itemstack)
+                                end
+                            end
+                        elseif content_in < inf.count then
+                            local content_out = inv_out.get_contents()[item]
+                            if content_out ~= nil then
+                                itemstack = {name = item, count = content_out}
+                                if inv_in.can_insert(itemstack) then
+                                    inv_in.insert(itemstack)
+                                    inv_out.remove(itemstack)
+                                end
+                           end
+                        end
+                        
+                    end
+                    -- let it be 1
+                    return 1
+                else
+                    return false
+                end 
+			else
+				return false -- The chests are broken, so we destroy the connection.
+			end
+		end,
+        
+		on_destroy = function(data)
+            local player_inventory = game.players[1].get_inventory(1)
+			if data.inside.valid then
+                local inv_in = data.inside.get_inventory(1)
+                if not inv_in.is_empty() then
+                    for item, count in pairs(inv_in.get_contents()) do
+                        itemstack = {name = item, count = count}
+                        if player_inventory.can_insert(itemstack) then
+                            player_inventory.insert(itemstack)
+                        end
+                    end
+                end
+				data.inside.destroy()
+			elseif data.outside.valid then
+                local inv_out = data.outside.get_inventory(1)
+                    if not inv_out.is_empty() then
+                        for item, count in pairs(inv_out.get_contents()) do
+                            itemstack = {name = item, count = count}
+                            if player_inventory.can_insert(itemstack) then
+                                player_inventory.insert(itemstack)
+                            end
+                        end
+                    end
+				data.outside.destroy()
+			end
+		end,
+	}
+)
+    
+register_connection_type("logistic-chest",
+	{
+		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
+			local inside_entity = nil
+			local inwards = false
+			if (outside_entity.type == "logistic-container" and outside_entity.request_slot_count == 0) then
+				inside_entity = interior.create_entity{name = outside_entity.name, position = conn_specs.inside_pos, force = factory.force, direction = outside_entity.direction}
+				inwards = (outside_entity.direction == conn_specs.direction_in)
+			else
+				return nil
+			end
+			if not inside_entity then 
+                return nil 
+            end
+			data = {
+				outside = outside_entity, inside = inside_entity,
+			}
+			return data
+		end,
+        
+        on_update = function(data)
+            if data.outside.valid and data.inside.valid then
+                local inv_in = data.inside.get_inventory(1)
+                local inv_out = data.outside.get_inventory(1)
+                local active = false
+                
+                if not inv_in.is_empty() then
+                    for item, count in pairs(inv_in.get_contents()) do                       
+                        itemstack = {name = item, count = count}
+                        if inv_out.can_insert(itemstack) then
+                            inv_in.remove(itemstack)
+                            inv_out.insert(itemstack)
+                        end
+                    end
+                end
+                return 1
+			else
+				return false -- The chests are broken, so we destroy the connection.
+			end
+		end,
+        
+		on_destroy = function(data)
+            local player_inventory = game.players[1].get_inventory(1)
+			if data.inside.valid then
+                local inv_in = data.inside.get_inventory(1)
+                if not inv_in.is_empty() then
+                    for item, count in pairs(inv_in.get_contents()) do
+                        itemstack = {name = item, count = count}
+                        if player_inventory.can_insert(itemstack) then
+                            player_inventory.insert(itemstack)
+                        end
+                    end
+                end
+				data.inside.destroy()
+			elseif data.outside.valid then
+                local inv_out = data.outside.get_inventory(1)
+                    if not inv_out.is_empty() then
+                        for item, count in pairs(inv_out.get_contents()) do
+                            itemstack = {name = item, count = count}
+                            if player_inventory.can_insert(itemstack) then
+                                player_inventory.insert(itemstack)
+                            end
+                        end
+                    end
 				data.outside.destroy()
 			end
 		end,
