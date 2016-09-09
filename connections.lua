@@ -326,10 +326,7 @@ register_connection_type("underground-belt",
 					end
 				end
 				
-				local outboundbuffer = math.max(t1.get_item_count(),t2.get_item_count())
-				if outboundbuffer < 1 or outboundbuffer > 4 then
-					outboundbuffer = 4
-				end
+				local outboundbuffer = math.max(math.min(t1.get_item_count(),t2.get_item_count()),1)
 				
 				-- data.belt_speed is in tiles per tick
 				-- 9/32 tiles per item
