@@ -133,7 +133,6 @@ end
 --remote.add_interface("factorissimo_belt", 
 register_connection_type("belt",
 	{
-	
 		-- This function is given an entity that was placed on an outside port and must decide whether the entity is acceptable for this connection type.
 		-- If the entity is accepted, this function must establish a connection and return a data table containing all the relevant connection information, otherwise this function must return nil.
 		-- Arguments:
@@ -182,30 +181,45 @@ register_connection_type("belt",
 			if data.from.valid and data.to.valid then
 				local f1 = data.from.get_transport_line(1)
 				local t1 = data.to.get_transport_line(1)
-				local active = false
+				local beltpos = 0
 				for t, c in pairs(f1.get_contents()) do
-					if t1.insert_at(0.75, {name = t, count = 1}) then
-						f1.remove_item{name = t, count = 1}
-						active = true
+					local remaining = c
+					while remaining > 0 do
+						if t1.insert_at(beltpos, {name = t, count = 1}) then
+							beltpos = beltpos + 0.25
+							remaining = remaining - 1
+						else
+							break
+						end
+					end
+					if c > remaining then
+						f1.remove_item{name = t, count = c-remaining}
 					end
 				end
 				local f2 = data.from.get_transport_line(2)
 				local t2 = data.to.get_transport_line(2)
+				local beltpos = 0
 				for t, c in pairs(f2.get_contents()) do
-					if t2.insert_at(0.75, {name = t, count = 1}) then -- TODO batching
-						f2.remove_item{name = t, count = 1}
-						active = true
+					local remaining = c
+					while remaining > 0 do
+						if t2.insert_at(beltpos, {name = t, count = 1}) then
+							beltpos = beltpos + 0.25
+							remaining = remaining - 1
+						else
+							break
+						end
+					end
+					if c > remaining then
+						f2.remove_item{name = t, count = c-remaining}
 					end
 				end
+				
+				local outboundbuffer = math.max(math.min(t1.get_item_count(),t2.get_item_count()),1)
 				
 				-- data.belt_speed is in tiles per tick
 				-- 9/32 tiles per item
 				-- Wait for amount of ticks per item
-				--if active then
-					return (9/32)/data.belt_speed
-				--else
-				--	return 3*(9/32)/data.belt_speed
-				--end
+				return (9/32)/data.belt_speed * outboundbuffer
 			else
 				return false -- The belts are broken, so we destroy the connection.
 			end
