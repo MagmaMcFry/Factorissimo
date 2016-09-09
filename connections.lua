@@ -345,7 +345,7 @@ register_connection_type("underground-belt",
 				-- data.belt_speed is in tiles per tick
 				-- 9/32 tiles per item
 				-- Wait for amount of ticks per item
-				return (9/32)/data.belt_speed*outboundbuffer
+				return (9/32)/data.belt_speed * outboundbuffer
 			else
 				return false -- The belts are broken, so we destroy the connection.
 			end
@@ -407,11 +407,8 @@ register_connection_type("pipe",
 					data.outside.fluidbox[1] = fluid
 					data.inside.fluidbox[1] = fluid
 				end
-				local delay = 11 - math.ceil(delta)
-				if delay < 1 then
-					delay = 1
-				end
-				return delay
+
+				return math.max(10 - math.ceil(delta),1)
 			else
 				return false
 			end
