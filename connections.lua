@@ -226,11 +226,7 @@ register_connection_type("belt",
 
 --remote.call("factorissimo_connections", "register_connection_type", "pipe", "factorissimo_pipe")
 --remote.add_interface("factorissimo_pipe", 
-register_connection_type("pipe",
-	{	
-		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
-			local inside_entity = nil
-			if outside_entity.type == "pipe" then
+" then
 				inside_entity = interior.create_entity{name = outside_entity.name, position = conn_specs.inside_pos, force = factory.force}
 				if not inside_entity then return nil end
 			elseif outside_entity.type == "pipe-to-ground" and outside_entity.direction == conn_specs.direction_in then
@@ -249,22 +245,29 @@ register_connection_type("pipe",
 		
 		on_update = function(data)
 			if data.outside.valid and data.inside.valid then
+				local delta = 0
 				fluid1 = data.outside.fluidbox[1]
 				fluid2 = data.inside.fluidbox[1]
 				if fluid1 and fluid2 then
 					if fluid1.type == fluid2.type then
 						local amount = fluid1.amount + fluid2.amount
+						delta = math.abs(fluid1.amount - fluid2.amount)
 						local temperature = (fluid1.amount*fluid1.temperature+fluid2.amount*fluid2.temperature)/amount -- Total temperature balance
 						data.outside.fluidbox[1] = {type = fluid1.type, amount=amount/2, temperature=temperature}
 						data.inside.fluidbox[1] = {type = fluid1.type, amount=amount/2, temperature=temperature}
 					end
 				elseif fluid1 or fluid2 then
 					fluid = fluid1 or fluid2
+					delta = fluid.amount
 					fluid.amount = fluid.amount/2
 					data.outside.fluidbox[1] = fluid
 					data.inside.fluidbox[1] = fluid
 				end
-				return 1
+				local delay = 11 - math.ceil(delta)
+				if delay < 1 then
+					delay = 1
+				end
+				return delay
 			else
 				return false
 			end
