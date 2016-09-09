@@ -292,14 +292,12 @@ register_connection_type("underground-belt",
 				
 				local f1 = from.get_transport_line(defines.transport_line.left_underground_line)
 				local t1 = to.get_transport_line(defines.transport_line.left_underground_line)	
-				local leftmoved = 0
 				local beltpos = 0
 				for t, c in pairs(f1.get_contents()) do
 					local remaining = c
 					while remaining > 0 do
 						if t1.insert_at(beltpos, {name = t, count = 1}) then
 							beltpos = beltpos + 0.25
-							leftmoved = leftmoved + 1
 							remaining = remaining - 1
 						else
 							break
@@ -312,14 +310,12 @@ register_connection_type("underground-belt",
 				
 				local f2 = from.get_transport_line(defines.transport_line.right_underground_line)
 				local t2 = to.get_transport_line(defines.transport_line.right_underground_line)
-				local rightmoved = 0
 				local beltpos = 0
 				for t, c in pairs(f2.get_contents()) do
 					local remaining = c
 					while remaining > 0 do
 						if t2.insert_at(beltpos, {name = t, count = 1}) then
 							beltpos = beltpos + 0.25
-							rightmoved = rightmoved + 1
 							remaining = remaining - 1
 						else
 							break
@@ -330,15 +326,15 @@ register_connection_type("underground-belt",
 					end
 				end
 				
-				local maxmoved = math.max(leftmoved,rightmoved)
-				if maxmoved < 1 or maxmoved > 4 then
-					maxmoved = 4
+				local outboundbuffer = math.max(t1.get_item_count(),t2.get_item_count())
+				if outboundbuffer < 1 or outboundbuffer > 4 then
+					outboundbuffer = 4
 				end
 				
 				-- data.belt_speed is in tiles per tick
 				-- 9/32 tiles per item
 				-- Wait for amount of ticks per item
-				return (9/32)/data.belt_speed*maxmoved
+				return (9/32)/data.belt_speed*outboundbuffer
 			else
 				return false -- The belts are broken, so we destroy the connection.
 			end
