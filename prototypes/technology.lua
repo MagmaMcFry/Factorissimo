@@ -7,11 +7,11 @@ data:extend({
 		{
 			{
 				type = "unlock-recipe",
-				recipe = "small-factory"
+				recipe = "small_factory"
 			},
 			{
 				type = "unlock-recipe",
-				recipe = "small-power-plant"
+				recipe = "small_power_plant"
 			},
 		},
 		prerequisites = {"steel-processing"},

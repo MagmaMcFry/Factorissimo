@@ -4,11 +4,11 @@ require ("prototypes.copied-from-base.circuit-connector-sprites")
 data:extend({
 	-- FACTORY --
 	{
-		type = "roboport",
-		name = "small-factory",
+		type = "electric-energy-interface",
+		name = "small_factory",
 		icon = "__Factorissimo__/graphics/icons/small-factory.png",
 		flags = {"placeable-player", "player-creation"},
-		minable = {hardness = 0.2, mining_time = 10, result = "small-factory"},
+		minable = {hardness = 0.2, mining_time = 10, result = "small_factory"},
 		max_health = 5000,
 		corpse = "big-remnants",
 		collision_box = {{-2.95, -2.95}, {2.95, 2.4}},
@@ -18,11 +18,10 @@ data:extend({
 		{
 			type = "electric",
 			usage_priority = "secondary-input",
-			input_flow_limit = factorissimo.config.power_input_limit,
-			output_flow_limit = "0MW",
-			buffer_capacity = factorissimo.config.power_buffer
+			input_flow_limit = "0W",
+			output_flow_limit = "0W",
+			buffer_capacity = "0W",
 		},
-		energy_usage = "0kW",
 		pumping_speed = 0,
 		fluid_box = -- NOT WORKING :( Pipes won't connect, roboport entity type won't create a fluid box. Need better entity type
 		{
@@ -44,18 +43,6 @@ data:extend({
 				{ position = {3, 1}, type="output" },
 			},
 		},
-		
-		-- unused roboport features
-		charging_energy = "1000kW",
-		logistics_radius = 0, 
-		construction_radius = 0,
-		charge_approach_distance = 5,
-		robot_slots_count = 0,
-		recharge_minimum = "4000MJ",
-		material_slots_count = 0,
-		stationing_offset = {0, 0},
-		charging_offsets = {},
-		
 		
 		picture =
 		{
@@ -170,11 +157,11 @@ data:extend({
 	
 	-- POWER PLANT --
 	{
-		type = "roboport",
-		name = "small-power-plant",
+		type = "electric-energy-interface",
+		name = "small_power_plant",
 		icon = "__Factorissimo__/graphics/icons/small-power-plant.png",
 		flags = {"placeable-player", "player-creation"},
-		minable = {hardness = 0.2, mining_time = 10, result = "small-power-plant"},
+		minable = {hardness = 0.2, mining_time = 10, result = "small_power_plant"},
 		max_health = 5000,
 		corpse = "big-remnants",
 		collision_box = {{-2.95, -2.95}, {2.95, 2.4}},
@@ -184,11 +171,10 @@ data:extend({
 		{
 			type = "electric",
 			usage_priority = "secondary-output",
-			input_flow_limit = "0MW",
-			output_flow_limit = factorissimo.config.power_output_limit,
-			buffer_capacity = factorissimo.config.power_buffer
+			input_flow_limit = "0W",
+			output_flow_limit = "0W",
+			buffer_capacity = "0W",
 		},
-		energy_usage = "0kW",
 		pumping_speed = 0,
 		fluid_box = -- NOT WORKING :( Pipes won't connect, roboport entity type won't create a fluid box. Need better entity type
 		{
@@ -210,18 +196,6 @@ data:extend({
 				{ position = {3, 1}, type="output" },
 			},
 		},
-		
-		-- unused roboport features
-		charging_energy = "1000kW",
-		logistics_radius = 0, 
-		construction_radius = 0,
-		charge_approach_distance = 5,
-		robot_slots_count = 0,
-		recharge_minimum = "4000MJ",
-		material_slots_count = 0,
-		stationing_offset = {0, 0},
-		charging_offsets = {},
-		
 		
 		picture =
 		{

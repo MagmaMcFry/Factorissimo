@@ -1,11 +1,12 @@
 require ("prototypes.copied-from-base.demo-pipecovers")
 require ("prototypes.copied-from-base.circuit-connector-sprites")
+local config = require('config')
 
 data:extend({
 	-- FACTORY POWER PROVIDER --
 	{
-		type = "accumulator",
-		name = "factory-power-provider",
+		type = "electric-energy-interface",
+		name = "factory-power-transferrer",
 		icon = "__base__/graphics/icons/accumulator.png",
 		flags = {"placeable-neutral"},
 		minable = nil,
@@ -16,10 +17,10 @@ data:extend({
 		energy_source =
 		{
 			type = "electric",
-			buffer_capacity = factorissimo.config.power_buffer,
+			buffer_capacity = "0MW",
 			usage_priority = "terciary",
 			input_flow_limit = "0MW",
-			output_flow_limit = factorissimo.config.power_input_limit
+			output_flow_limit = "0MW",
 		},
 		picture =
 		{
@@ -84,91 +85,6 @@ data:extend({
 		circuit_wire_max_distance = 7.5,
 		default_output_signal = "signal-A"
 	},
-	
-	
-	-- FACTORY POWER RECEIVER --
-	{
-		type = "accumulator",
-		name = "factory-power-receiver",
-		icon = "__base__/graphics/icons/accumulator.png",
-		flags = {"placeable-neutral"},
-		minable = nil,
-		max_health = 150,
-		corpse = "medium-remnants",
-		collision_box = {{-0.9, -0.9}, {0.9, 0.9}},
-		selection_box = {{-1, -1}, {1, 1}},
-		energy_source =
-		{
-			type = "electric",
-			buffer_capacity = factorissimo.config.power_buffer,
-			usage_priority = "terciary",
-			input_flow_limit = factorissimo.config.power_output_limit,
-			output_flow_limit = "0MW"
-		},
-		picture =
-		{
-			filename = "__base__/graphics/entity/accumulator/accumulator.png",
-			priority = "extra-high",
-			width = 124,
-			height = 103,
-			shift = {0.6875, -0.203125}
-		},
-		charge_animation =
-		{
-			filename = "__base__/graphics/entity/accumulator/accumulator-charge-animation.png",
-			width = 138,
-			height = 135,
-			line_length = 8,
-			frame_count = 24,
-			shift = {0.46875, -0.640625},
-			animation_speed = 0.5
-		},
-		charge_cooldown = 30,
-		charge_light = {intensity = 0.3, size = 0}, --7
-		discharge_animation =
-		{
-			filename = "__base__/graphics/entity/accumulator/accumulator-discharge-animation.png",
-			width = 147,
-			height = 128,
-			line_length = 8,
-			frame_count = 24,
-			shift = {0.390625, -0.53125},
-			animation_speed = 0.5
-		},
-		discharge_cooldown = 60,
-		discharge_light = {intensity = 0.7, size = 0}, --7
-		vehicle_impact_sound =	{ filename = "__base__/sound/car-metal-impact.ogg", volume = 0.65 },
-		working_sound =
-		{
-			sound =
-			{
-				filename = "__base__/sound/accumulator-working.ogg",
-				volume = 1
-			},
-			idle_sound = {
-				filename = "__base__/sound/accumulator-idle.ogg",
-				volume = 0.4
-			},
-			max_sounds_per_type = 5
-		},
-		circuit_wire_connection_point =
-		{
-			shadow =
-			{
-				red = {0.984375, 1.10938},
-				green = {0.890625, 1.10938}
-			},
-			wire =
-			{
-				red = {0.6875, 0.59375},
-				green = {0.6875, 0.71875}
-			}
-		},
-		circuit_connector_sprites = get_circuit_connector_sprites({0.46875, 0.5}, {0.46875, 0.8125}, 26),
-		circuit_wire_max_distance = 7.5,
-		default_output_signal = "signal-A"
-	},
-	
 	
 	 -- FACTORY POWER DISTRIBUTOR --
 	{
@@ -275,4 +191,90 @@ data:extend({
 			priority = "extra-high-no-scale"
 		},
 	},
+
+
+	-- OUTPUT CHEST
+	{
+		type = "logistic-container",
+		name = "factory-chest-output",
+		icon = "__base__/graphics/icons/logistic-chest-requester.png",
+		flags = {"placeable-neutral"},
+		minable = nil,
+		max_health = 150,
+		corpse = "small-remnants",
+		collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
+		selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+		fast_replaceable_group = "container",
+		inventory_size = 55,
+		logistic_mode = "requester",
+		open_sound = { filename = "__base__/sound/metallic-chest-open.ogg", volume=0.65 },
+		close_sound = { filename = "__base__/sound/metallic-chest-close.ogg", volume = 0.7 },
+		vehicle_impact_sound =  { filename = "__base__/sound/car-metal-impact.ogg", volume = 0.65 },
+		picture =
+		{
+		filename = "__base__/graphics/entity/logistic-chest/logistic-chest-requester.png",
+		priority = "extra-high",
+		width = 38,
+		height = 32,
+		shift = {0.09375, 0}
+		},
+		circuit_wire_connection_point =
+		{
+		shadow =
+		{
+			red = {0.734375, 0.453125},
+			green = {0.609375, 0.515625},
+		},
+		wire =
+		{
+			red = {0.40625, 0.21875},
+			green = {0.40625, 0.375},
+		}
+		},
+		circuit_wire_max_distance = 7.5,
+		circuit_connector_sprites = get_circuit_connector_sprites({0.1875, 0.15625}, nil, 18),
+  },
+
+
+  -- INPUT CHEST
+	{
+		type = "logistic-container",
+		name = "factory-chest-input",
+		icon = "__base__/graphics/icons/logistic-chest-active-provider.png",
+		flags = {"placeable-neutral"},
+		minable = nil,
+		max_health = 150,
+		corpse = "small-remnants",
+		collision_box = {{-0.35, -0.35}, {0.35, 0.35}},
+		selection_box = {{-0.5, -0.5}, {0.5, 0.5}},
+		fast_replaceable_group = "container",
+		inventory_size = 55,
+		logistic_mode = "active-provider",
+		open_sound = { filename = "__base__/sound/metallic-chest-open.ogg", volume=0.65 },
+		close_sound = { filename = "__base__/sound/metallic-chest-close.ogg", volume = 0.7 },
+		vehicle_impact_sound =  { filename = "__base__/sound/car-metal-impact.ogg", volume = 0.65 },
+		picture =
+		{
+			filename = "__base__/graphics/entity/logistic-chest/logistic-chest-active-provider.png",
+			priority = "extra-high",
+			width = 38,
+			height = 32,
+			shift = {0.09375, 0}
+		},
+		circuit_wire_connection_point =
+		{
+			shadow =
+			{
+				red = {0.734375, 0.453125},
+				green = {0.609375, 0.515625},
+			},
+			wire =
+			{
+				red = {0.40625, 0.21875},
+				green = {0.40625, 0.375},
+			}
+		},
+		circuit_wire_max_distance = 7.5,
+		circuit_connector_sprites = get_circuit_connector_sprites({0.1875, 0.15625}, nil, 18),
+  },
 })
