@@ -29,7 +29,7 @@ end)
 
 -- SETTINGS --
 
-local DEBUG = true
+local DEBUG = false
 
 local LAYOUT = require("layouts")
 
