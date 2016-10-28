@@ -49,4 +49,14 @@ data:extend({
     place_result = "factory-power-distributor",
     stack_size = 50
   },
+  {
+    type = "item",
+    name = "factory-gate",
+    icon = "__base__/graphics/icons/gate.png",
+    flags = {"hidden"},
+    subgroup = "production-machine",
+    order = "y[factory]-z[invisible]-d",
+    place_result = "factory-gate",
+    stack_size = 50
+  }
 })
