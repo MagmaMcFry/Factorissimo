@@ -239,7 +239,9 @@ function build_factory_interior(surface, layout, structure)
 	else
 		place_entity_generated(surface, "factory-power-provider", layout.constructor.provider_x, layout.constructor.provider_y, "power_provider")
 	end
-	place_entity_generated(surface, "factory-power-distributor", layout.constructor.distributor_x, layout.constructor.distributor_y)
+	for _, coords in pairs(layout.constructor.distributors) do
+		place_entity_generated(surface, "factory-power-distributor", coords.x, coords.y)
+	end
 	local dir = get_direction(surface)
 	for _, coords in pairs(layout[dir].gates) do
 		place_entity(surface, "factory-gate", coords.x, coords.y, structure.parent.force, (defines.direction[dir] + 2) % 8)
