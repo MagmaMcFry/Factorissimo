@@ -189,8 +189,8 @@ data:extend({
 		collision_box = {{-0.9, -0.9}, {0.9, 0.9}},
 		selection_box = {{-1, -1}, {1, 1}},
 		drawing_box = {{-1, -3}, {1, 1}},
-		maximum_wire_distance = 0,
-		supply_area_distance = 40, -- Thanks Rufflemao!
+		maximum_wire_distance = 90,
+		supply_area_distance = 45, -- Thanks Rufflemao!
 		pictures =
 		{
 			filename = "__base__/graphics/entity/substation/substation.png",
