@@ -3,6 +3,7 @@ if not factorissimo.config then factorissimo.config = {} end
 
 require("config")
 
+require("prototypes.category")
 require("prototypes.entity.factory")
 require("prototypes.entity.utility")
 require("prototypes.item")
