@@ -1,14 +1,18 @@
+local function create_building_item(name, order_flag)
+	return {
+		type = "item",
+		name = name,
+		icon = "__Factorissimo__/graphics/icons/" .. name .. ".png",
+		flags = {"goes-to-quickbar"},
+		subgroup = "production-machine",
+		order = "y[factory]-" .. order_flag .. "[" .. name .. "]",
+		place_result = name,
+		stack_size = 10
+	}
+end
+
 data:extend({
-  {
-    type = "item",
-    name = "small-factory",
-    icon = "__Factorissimo__/graphics/icons/small-factory.png",
-    flags = {"goes-to-quickbar"},
-    subgroup = "production-machine",
-    order = "y[factory]-a[small-factory]",
-    place_result = "small-factory",
-    stack_size = 10
-  },
+  create_building_item("small-factory", "a"),
   {
     type = "item",
     name = "factory-power-provider",
@@ -19,16 +23,7 @@ data:extend({
     place_result = "factory-power-provider",
     stack_size = 50
   },
-  {
-    type = "item",
-    name = "small-power-plant",
-    icon = "__Factorissimo__/graphics/icons/small-power-plant.png",
-    flags = {"goes-to-quickbar"},
-    subgroup = "production-machine",
-    order = "y[factory]-b[small-power-plant]",
-    place_result = "small-power-plant",
-    stack_size = 10
-  },
+  create_building_item("small-power-plant", "b"),
   {
     type = "item",
     name = "factory-power-receiver",
