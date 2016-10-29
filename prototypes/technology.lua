@@ -11,6 +11,10 @@ data:extend({
 			},
 			{
 				type = "unlock-recipe",
+				recipe = "medium-factory"
+			},
+			{
+				type = "unlock-recipe",
 				recipe = "small-power-plant"
 			},
 		},

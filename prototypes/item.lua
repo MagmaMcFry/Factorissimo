@@ -13,6 +13,7 @@ end
 
 data:extend({
   create_building_item("small-factory", "a"),
+  create_building_item("medium-factory", "a"),
   {
     type = "item",
     name = "factory-power-provider",
@@ -23,7 +24,7 @@ data:extend({
     place_result = "factory-power-provider",
     stack_size = 50
   },
-  create_building_item("small-power-plant", "b"),
+  create_building_item("small-power-plant", "c"),
   {
     type = "item",
     name = "factory-power-receiver",

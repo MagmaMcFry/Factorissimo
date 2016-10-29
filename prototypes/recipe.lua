@@ -14,6 +14,20 @@ data:extend({
 	},
 	{
 		type = "recipe",
+		name = "medium-factory",
+		enabled = false,
+		ingredients =
+		{
+			{"small-factory", 4},
+			{"steel-plate", 100},
+			{"stone-brick", 500},
+		},
+		energy_required = 30,
+		result = "medium-factory",
+		requester_paste_multiplier = 1
+	},
+	{
+		type = "recipe",
 		name = "small-power-plant",
 		enabled = false,
 		ingredients =
