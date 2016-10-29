@@ -142,7 +142,12 @@ data:extend({
 	-- FACTORY --
 	create_building(SIZE_SMALL, "factory", 288, 256, { 0.5, 0.25 }),
 	create_building(SIZE_MEDIUM, "factory", 576, 512, { 1.75, 0.75 }),
+	create_building(SIZE_LARGE, "factory", 736, 720, { 1.2, 0.75 }),
+	create_building(SIZE_HUGE, "factory", 960, 896, { 1.3, 0.75 }),
 	
 	-- POWER PLANT --
-	create_building(SIZE_SMALL, "power-plant", 288, 256, { 0.5, 0.25 })
+	create_building(SIZE_SMALL, "power-plant", 288, 256, { 0.5, 0.25 }),
+	create_building(SIZE_MEDIUM, "power-plant", 576, 512, { 1.75, 0.75 }),
+	create_building(SIZE_LARGE, "power-plant", 736, 720, { 1.2, 0.75 }),
+	create_building(SIZE_HUGE, "power-plant", 960, 896, { 1.3, 0.75 })
 })
