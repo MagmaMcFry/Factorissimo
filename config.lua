@@ -39,3 +39,10 @@ factorissimo.config.pollution_multiplier = 1.0
 -- Note: Changing this config will not prevent you from *placing* factories anywhere. However if you place factories where they are not supposed to be, they will simply not work and not connect to anything, and you won't be able to enter them.
 -- Another note: Changing this config mid-game will not disconnect preexisting wrongly nested factories, but it will prevent you from entering them. To be able to enter such interior factories again, just mine them and place them back down in the overworld.
 factorissimo.config.recursion = 3
+
+-- Maximum factory size
+-- 0: Small (6X6) only
+-- 1: Small and medium (12X12)
+-- 2: Small, medium, and large (18X18)
+-- 3: All (up to 24X24)
+factorissimo.config.maximum_tier = 3
