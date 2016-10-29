@@ -33,7 +33,7 @@ local function get_connection_points(size)
 	return result
 end
 
-local function create_building(size, category)
+local function create_building(size, category, image_width, image_height, image_shift)
 	local name = index_size(size) .. "-" .. category
 	local icon = "__Factorissimo__/graphics/icons/" .. name .. ".png"
 	local input, output, priority, usage
@@ -88,34 +88,34 @@ local function create_building(size, category)
 		  north =
 		  {
 			filename = image_prefix .. "-north.png",
-			width = 288,
-			height = 256,
+			width = image_width,
+			height = image_height,
 			frame_count = 1,
-			shift = {0.5, 0.25}
+			shift = image_shift
 		  },
 		  east =
 		  {
 			filename = image_prefix .. "-east.png",
-			width = 288,
-			height = 256,
+			width = image_width,
+			height = image_height,
 			frame_count = 1,
-			shift = {0.5, 0.25}
+			shift = image_shift
 		  },
 		  south =
 		  {
 			filename = image_prefix .. "-south.png",
-			width = 288,
-			height = 256,
+			width = image_width,
+			height = image_height,
 			frame_count = 1,
-			shift = {0.5, 0.25}
+			shift = image_shift
 		  },
 		  west =
 		  {
 			filename = image_prefix .. "-west.png",
-			width = 288,
-			height = 256,
+			width = image_width,
+			height = image_height,
 			frame_count = 1,
-			shift = {0.5, 0.25}
+			shift = image_shift
 		  }
 		},
 		vehicle_impact_sound =	{ filename = "__base__/sound/car-metal-impact.ogg", volume = 0.65 },
@@ -140,8 +140,9 @@ end
 
 data:extend({
 	-- FACTORY --
-	create_building(SIZE_SMALL, "factory"),
+	create_building(SIZE_SMALL, "factory", 288, 256, { 0.5, 0.25 }),
+	create_building(SIZE_MEDIUM, "factory", 576, 512, { 1.75, 0.75 }),
 	
 	-- POWER PLANT --
-	create_building(SIZE_SMALL, "power-plant")
+	create_building(SIZE_SMALL, "power-plant", 288, 256, { 0.5, 0.25 })
 })
