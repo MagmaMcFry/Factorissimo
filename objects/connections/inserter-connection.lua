@@ -92,8 +92,6 @@ end
 function InserterConnection:_process_input()
     if self:_is_hand_full_and_idle() then
         self:_try_take_from_inserter_for_input()
-    --elseif self:_is_hand_empty_and_idle() then --currently unnecessary
-        --self:_try_give_to_inserter_for_input()
     end
     return true --prevent fallthrough to output
 end
@@ -115,63 +113,7 @@ function InserterConnection:_process_output()
     end
     return true
 end
---[[ BEGIN UNUSED CODE, DELETE AFTER COMMIT
-function InserterConnection:_try_give_to_inserter_for_input()
-    local inserter = self._source_entity
-    local source, item, count = self:_try_get_item_stack(inserter.pickup_target)
-    if source and item and count then --SimpleStack
-        count = math.min(count, self._stack_max)
-        inserter.held_stack.set_stack({name = item, count = count})
-        source.remove_item({name = item, count = count})
-    elseif source and source.valid_for_read then --LuaItemStack
-        local old_count = source.count
-        source.count = math.min(count, self._stack_max)
-        inserter.held_stack.set_stack(source)
-        local new_count = old_count - source.count
-        if new_count ~= 0 then
-            source.count = new_count
-        else
-            source.clear()
-        end
-    end
-end
 
-function InserterConnection:_try_get_item_stack(target)
-    if target and target.valid then
-        local type = target.type
-        if type:find("belt") or type:find("splitter") then
-            return self:_try_get_belt_item_stack(target)
-        else
-            return self:_try_get_inventory_item_stack(target)
-        end
-    end
-end
-
-function InserterConnection:_try_get_belt_item_stack(target)
-    local belt = nil
-    for _,line in pairs(defines.transport_line) do
-        pcall(function() belt = target.get_transport_line(line) end)
-        if belt and belt.valid then
-            for k,v in pairs(belt.get_contents()) do
-                return belt, k, v
-            end
-        end
-    end
-end
-
-function InserterConnection:_try_get_inventory_item_stack(target, ins)
-    local types = self.INV_TYPES
-    for i = 1, #types do
-        local inv = target.get_inventory(types[i])
-        if inv and inv.valid then
-            local item = self:_try_get_item_from_inventory(inv, ins)
-            if item then
-                return item
-            end
-        end
-    end
-end
---]]
 function InserterConnection:_try_take_from_inserter_for_input()
     local stack = self._source_entity.held_stack
     local input = self._inbox.get_inventory(defines.inventory.chest)
