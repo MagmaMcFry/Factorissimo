@@ -1,7 +1,7 @@
 data:extend({
 	{
 		type = "recipe",
-		name = "small-factory",
+		name = "small_factory",
 		enabled = false,
 		ingredients =
 		{
@@ -9,12 +9,12 @@ data:extend({
 			{"stone-brick", 500},
 		},
 		energy_required = 30,
-		result = "small-factory",
+		result = "small_factory",
 		requester_paste_multiplier = 1
 	},
 	{
 		type = "recipe",
-		name = "small-power-plant",
+		name = "small_power_plant",
 		enabled = false,
 		ingredients =
 		{
@@ -23,7 +23,7 @@ data:extend({
 			{"copper-plate", 100},
 		},
 		energy_required = 30,
-		result = "small-power-plant",
+		result = "small_power_plant",
 		requester_paste_multiplier = 1
 	},
 })
