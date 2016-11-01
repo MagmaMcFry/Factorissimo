@@ -136,14 +136,15 @@ function InserterConnection:_compute_direction()
     local pos, dir, box = ent.position, ent.direction, self._bldg.bounding_box
     local top_dir = {[dirs.north] = self.OUTPUT, [dirs.south] = self.INPUT}
     local left_dir = {[dirs.east] = self.INPUT, [dirs.west] = self.OUTPUT}
-    if pos.y > box.left_top.y then --north
-        self._dir = top_dir[dir]
-    elseif pos.x > box.right_bottom.x then --east
+
+    if pos.x > box.right_bottom.x then --east
+        self._dir = left_dir[dir]
+    elseif pos.x < box.left_top.x then --west
         self._dir = left_dir[dir] and -left_dir[dir]
+    elseif pos.y > box.left_top.y then --north
+        self._dir = top_dir[dir]
     elseif pos.y < box.right_bottom.y then --south
         self._dir = top_dir[dir] and -top_dir[dir]
-    elseif pos.x < box.left_top.x then --west, should be guaranteed
-        self._dir = left_dir[dir]
     end
 end
 
