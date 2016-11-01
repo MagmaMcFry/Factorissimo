@@ -23,8 +23,8 @@ function Factory:new(args)
 end
 
 function Factory:deconstruct()
-    for i = 1, #self._connections do
-        self._connections[i]:destroy_for_deconstruct(self._room.surface)
+    for _,conn in pairs(self._connections) do
+        conn:destroy_for_deconstruct(self._room.surface)
     end
 end
 
