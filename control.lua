@@ -3,7 +3,6 @@ if not factorissimo.config then factorissimo.config = {} end
 
 require("config")
 require("updates")
-require("layouts")
 require("connections")
 
 -- GLOBALS --
@@ -12,6 +11,7 @@ function glob_init()
 	global["factory-surface"] = global["factory-surface"] or {}
 	global["surface-structure"] = global["surface-structure"] or {}
 	global["surface-layout"] = global["surface-layout"] or {}
+	global["surface-direction"] = global["surface-direction"] or {}
 	global["surface-exit"] = global["surface-exit"] or {}
 	global["health-data"] = global["health-data"] or {}
 	init_connection_structure()
@@ -31,9 +31,20 @@ end)
 
 local DEBUG = false
 
-local LAYOUT = layouts()
+local LAYOUT = require("layouts")
 
 -- FACTORY WORLD ASSIGNMENT --
+local function index_direction(direction)
+	if direction == defines.direction.north then
+		return "north"
+	elseif direction == defines.direction.south then
+		return "south"
+	elseif direction == defines.direction.east then
+		return "east"
+	elseif direction == defines.direction.west then
+		return "west"
+	end
+end
 
 function create_surface(factory, layout)
 	local surface_name = "Inside factory " .. factory.unit_number
@@ -42,7 +53,9 @@ function create_surface(factory, layout)
 	global["factory-surface"][factory.unit_number] = surface -- surface_name
 	global["surface-structure"][surface_name] = {parent = factory, ticks = 0, connections = {}, chunks_generated = 0, chunks_required = 4*layout.chunk_radius*layout.chunk_radius, finished = false}
 	global["surface-layout"][surface_name] = layout.name
-	global["surface-exit"][surface_name] = {x = factory.position.x+layout.exit_x, y = factory.position.y+layout.exit_y, surface = factory.surface}
+	local dir = index_direction(factory.direction)
+	global["surface-direction"][surface_name] = dir
+	global["surface-exit"][surface_name] = {x = factory.position.x+layout[dir].exit_x, y = factory.position.y+layout[dir].exit_y, surface = factory.surface}
 	reset_daytime(surface)
 end
 
@@ -50,7 +63,18 @@ function connect_factory_to_existing_surface(factory, surface)
 	global["factory-surface"][factory.unit_number] = surface
 	global["surface-structure"][surface.name].parent = factory
 	local layout = get_layout(surface)
-	global["surface-exit"][surface.name] = {x = factory.position.x+layout.exit_x, y = factory.position.y+layout.exit_y, surface = factory.surface}
+	local dir = index_direction(factory.direction)
+	if dir ~= global["surface-direction"][surface.name] then -- the factory has been placed in a different orientation than previously, adjust accordingly
+		global["surface-direction"][surface.name] = dir
+		global["surface-exit"][surface.name] = {x = factory.position.x+layout[dir].exit_x, y = factory.position.y+layout[dir].exit_y, surface = factory.surface}
+		local old_gates = surface.find_entities_filtered({ name = "factory-gate" })
+		for _, gate in pairs(old_gates) do
+			gate.destroy()
+		end
+		for _, coords in pairs(layout[dir].gates) do
+			place_entity(surface, "factory-gate", coords.x, coords.y, factory.force, (factory.direction + 2) % 8)
+		end
+	end
 end
 
 function has_surface(factory)
@@ -79,7 +103,7 @@ end
 
 function get_layout(surface)
 	if global["surface-layout"][surface.name] then
-		return LAYOUT[global["surface-layout"][surface.name]]
+		return LAYOUT[global["surface-layout"][surface.name]] 
 	else
 		return nil
 	end
@@ -91,6 +115,14 @@ function get_layout_by_name(surface_name)
 	else
 		return nil
 	end
+end
+
+function get_direction(surface)
+	return global["surface-direction"][surface.name]
+end
+
+function get_direction_by_name(surface_name)
+	return global["surface-direction"][surface_name]
 end
 
 function get_exit(surface)
@@ -195,25 +227,25 @@ function place_entity_generated(surface, entity_name, x, y, structure_id)
 	end
 end
 
-function build_factory_interior(factory, surface, layout, structure)
+function build_factory_interior(surface, layout, structure)
 	delete_entities(surface)
 	tiles = {}
-	for _, pconn in pairs(layout.possible_connections) do
-		add_tile_rect(tiles, "factory-wall", pconn.inside_x-1, pconn.inside_y-1, pconn.inside_x+2, pconn.inside_y+2)
-	end
-	for _, rect in pairs(layout.rectangles) do
+	for _, rect in pairs(layout.constructor.rectangles) do
 		add_tile_rect(tiles, rect.tile, rect.x1, rect.y1, rect.x2, rect.y2)
-	end
-	for _, pconn in pairs(layout.possible_connections) do
-		add_tile_rect(tiles, "factory-entrance", pconn.inside_x, pconn.inside_y, pconn.inside_x+1, pconn.inside_y+1)
 	end
 	surface.set_tiles(tiles)
 	if layout.is_power_plant then
-		place_entity_generated(surface, "factory-power-receiver", layout.provider_x, layout.provider_y, "power_provider")
+		place_entity_generated(surface, "factory-power-receiver", layout.constructor.provider_x, layout.constructor.provider_y, "power_provider")
 	else
-		place_entity_generated(surface, "factory-power-provider", layout.provider_x, layout.provider_y, "power_provider")
+		place_entity_generated(surface, "factory-power-provider", layout.constructor.provider_x, layout.constructor.provider_y, "power_provider")
 	end
-	place_entity_generated(surface, "factory-power-distributor", layout.distributor_x, layout.distributor_y)
+	for _, coords in pairs(layout.constructor.distributors) do
+		place_entity_generated(surface, "factory-power-distributor", coords.x, coords.y)
+	end
+	local dir = get_direction(surface)
+	for _, coords in pairs(layout[dir].gates) do
+		place_entity(surface, "factory-gate", coords.x, coords.y, structure.parent.force, (defines.direction[dir] + 2) % 8)
+	end
 	structure.finished = true
 end
 
@@ -229,6 +261,7 @@ end)
 
 function on_built_factory(factory)
 	factory.rotatable = false
+	factory.operable = false
 	health_data = get_and_delete_health_data(factory.health)
 	if health_data then
 		connect_factory_to_existing_surface(factory, health_data.surface)
@@ -318,7 +351,7 @@ function mark_connections_dirty(factory)
 end
 
 local function check_connections(factory, surface, structure, layout, parent_surface)
-	for id, pconn in pairs(layout.possible_connections) do
+	for id, pconn in pairs(layout[global["surface-direction"][surface.name]].possible_connections) do
 		data = structure.connections[id]
 		
 		if data then
@@ -389,8 +422,10 @@ script.on_event(defines.events.on_tick, function(event)
 		elseif structure.parent and structure.parent.valid and structure.chunks_generated == structure.chunks_required then
 			-- We need to wait until the factory interior surface is generated with default worldgen, then replace it with our own interior
 			local surface = get_surface(structure.parent)
+			dbg(surface.name)
+			dbg(tostring(global["surface-layout"][surface.name]))
 			local layout = get_layout(surface)
-			build_factory_interior(structure.parent, surface, layout, structure)
+			build_factory_interior(surface, layout, structure)
 			-- This can theoretically be called repeatedly each tick until the factory is marked finished
 			if structure.finished then
 				-- Check connections once the factory is finished
@@ -416,10 +451,24 @@ end
 
 -- ENTERING/LEAVING FACTORIES
 
+function at_factory_entrance(player, factory)
+	local result = false
+	if factory.direction == defines.direction.north then
+		result = factory.position.y < player.position.y and math.abs(factory.position.x-player.position.x) < 0.6
+	elseif factory.direction == defines.direction.south then
+		result = factory.position.y > player.position.y and math.abs(factory.position.x-player.position.x) < 0.6
+	elseif factory.direction == defines.direction.east then
+		result = factory.position.x > player.position.x and math.abs(factory.position.y-player.position.y) < 0.6
+	elseif factory.direction == defines.direction.west then
+		result = factory.position.x < player.position.x and math.abs(factory.position.y-player.position.y) < 0.6
+	end -- should never be a non-cardinal direction
+	return result
+end
+
 function get_factory_beneath(player)
-	local entities = player.surface.find_entities_filtered{area = {{player.position.x-0.2, player.position.y-0.3},{player.position.x+0.2, player.position.y}}}
+	local entities = player.surface.find_entities_filtered{area = {{player.position.x-0.3, player.position.y-0.3},{player.position.x+0.3, player.position.y+0.3}}}
 	for _, entity in pairs(entities) do
-		if LAYOUT[entity.name] then
+		if LAYOUT[entity.name] and at_factory_entrance(player, entity) then
 			return entity
 		end
 	end
@@ -427,21 +476,22 @@ function get_factory_beneath(player)
 end
 
 function get_exit_beneath(player)
-	-- Depends on location of power distributor!
-	local entities = player.surface.find_entities_filtered{area={{player.position.x+2, player.position.y-3},{player.position.x+6, player.position.y-2}}, name="factory-power-distributor"}
+	-- Depends on location of gate!
+	local entities = player.surface.find_entities_filtered{area={{player.position.x-1, player.position.y-1},{player.position.x+1, player.position.y+1}}, name="factory-gate"}
 	return entities[1]
 end
 
 function try_enter_factory(player)
 	local factory = get_factory_beneath(player)
-	if factory and math.abs(factory.position.x-player.position.x) < 0.6 then
+	if factory then
 		local new_surface = get_surface(factory)
 		if new_surface and factory_placement_valid(new_surface, factory.surface) then
 			local structure = get_structure(new_surface)
 				if structure.finished then
 					local layout = get_layout(new_surface)
+					local dir = get_direction(new_surface)
 					reset_daytime(new_surface)
-					player.teleport({layout.entrance_x, layout.entrance_y}, new_surface)
+					player.teleport({layout[dir].entrance_x, layout[dir].entrance_y}, new_surface)
 					return
 				end
 		end
