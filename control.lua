@@ -418,7 +418,7 @@ local function check_connections(factory, surface, structure, layout, parent_sur
 				data = nil
 				structure.connections[id] = nil
 			end
-		elseif factory_placement_valid(surface, parent_surface) then
+		elseif factory_placement_valid(structure) then
 			local fx = structure.factory.position.x
 			local fy = structure.factory.position.y
 			structure.connections[id] = test_for_connection(parent_surface, factory, surface, pconn, structure.offset, fx, fy)
@@ -497,15 +497,19 @@ end)
 
 -- RECURSION
 
-function factory_placement_valid(inner_surface, outer_surface)
---	if is_factory(inner_surface) and is_factory(outer_surface) then
---		local inner_tier = get_layout(inner_surface).tier or 0
---		local outer_tier = get_layout(outer_surface).tier or 0
---		if factorissimo.config.recursion == 0 then return false end
---		if factorissimo.config.recursion == 1 then return inner_tier < outer_tier end
---		if factorissimo.config.recursion == 2 then return inner_tier <= outer_tier end
---		return true
---	end
+function factory_placement_valid(structure)
+	local inner_layout = get_structure_layout(structure)
+	local outer_layout = get_surface_layout(structure.factory.surface)
+
+	if inner_layout and outer_layout then
+		local inner_tier = inner_layout.tier or 0
+		local outer_tier = inner_layout.tier or 0
+		dbg("factory_placement_valid: inner=" .. inner_tier .. ", outer=" .. outer_tier)
+		if factorissimo.config.recursion == 0 then return false end
+		if factorissimo.config.recursion == 1 then return inner_tier < outer_tier end
+		if factorissimo.config.recursion == 2 then return inner_tier <= outer_tier end
+		return true
+	end
 	return true
 end
 
@@ -532,7 +536,7 @@ function try_enter_factory(player)
 	if factory and math.abs(factory.position.x-player.position.x) < 0.6 then
 		local structure = get_factory_structure(factory)
 		local new_surface = structure.surface
-		if structure.finished and factory_placement_valid(new_surface, factory.surface) then
+		if structure.finished and factory_placement_valid(structure) then
 			dbg("Entering structure: " .. structure.name)
 			reset_daytime(new_surface)
 			player.teleport({structure.entrance.x, structure.entrance.y}, new_surface)
