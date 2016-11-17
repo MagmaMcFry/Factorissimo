@@ -89,8 +89,8 @@ function create_structure(factory, layout, surface)
 
 		offset = offset,
 		exit = {
-			x = factory.position.x+layout.exit_x,
-			y = factory.position.y+layout.exit_y,
+			x = factory.position.x + layout.exit_x,
+			y = factory.position.y + layout.exit_y,
 			surface = factory.surface,
 		},
 		entrance = {
@@ -484,13 +484,17 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 			
 			-- TRANSFER POLLUTION
+			-- TODO: This assumes there are only four core squares we care about, centred around {0,0}, plus the factory interior offset.
+		        -- It should instead ask for the pollution of every chunk, using the layout.chunk_radius.
 			if structure.ticks % 60 < 1 then
-				local exit_pos = structure.exit
+				local exit = structure.exit
 				for y = -1,1,2 do
 					for x = -1,1,2 do
-						local pollution = surface.get_pollution({x, y})
-						surface.pollute({x, y}, -pollution/2)
-						parent_surface.pollute({exit_pos.x, exit_pos.y}, (pollution/2) * factorissimo.config.pollution_multiplier)
+						local offx = x + structure.offset.tile_x
+						local offy = y + structure.offset.tile_y
+						local pollution = surface.get_pollution({offx, offy})
+						surface.pollute({offx, offy}, -pollution/2)
+						exit.surface.pollute({exit.x, exit.y}, (pollution/2) * factorissimo.config.pollution_multiplier)
 					end
 				end
 			end
