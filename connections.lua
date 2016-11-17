@@ -42,7 +42,7 @@ function update_pending_connections()
 	end
 end
 
-function test_for_connection(parent_surface, factory, interior, raw_specs, fx, fy)
+function test_for_connection(parent_surface, factory, interior, raw_specs, offset, fx, fy)
 	local px = fx + raw_specs.outside_x
 	local py = fy + raw_specs.outside_y
 	for _, outside_entity in pairs(parent_surface.find_entities_filtered{area = {{px-0.2, py-0.2},{px+0.2, py+0.2}}}) do
@@ -51,7 +51,7 @@ function test_for_connection(parent_surface, factory, interior, raw_specs, fx, f
 				local data = methods.accepts_outside_entity(
 					outside_entity, factory, interior, {
 						outside_pos = {x = px, y = py},
-						inside_pos = {x = raw_specs.inside_x, y = raw_specs.inside_y},
+						inside_pos = {x = raw_specs.inside_x + offset.tile_x, y = raw_specs.inside_y + offset.tile_y},
 						direction_in = raw_specs.direction_in,
 						direction_out = raw_specs.direction_out,
 					}
