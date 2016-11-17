@@ -103,11 +103,15 @@ function create_structure(factory, layout, surface)
 	set_factory_structure(factory, structure)
 end
 
-function connect_factory_to_existing_surface(factory, surface)
-	global["factory-surface"][factory.unit_number] = surface
-	global["surface-structure"][surface.name].factory = factory
-	local layout = get_layout(surface)
-	global["surface-exit"][surface.name] = {x = factory.position.x+layout.exit_x, y = factory.position.y+layout.exit_y, surface = factory.surface}
+function connect_factory_to_existing_structure(factory, structure)
+	local layout = get_structure_layout(structure)
+	structure.exit = {
+		x = factory.position.x + layout.exit_x,
+		y = factory.position.y + layout.exit_y,
+		surface = factory.surface,
+	}
+	set_factory_structure(factory, structure)
+	dbg("reconnected " .. structure.name)
 end
 
 -- If this function gets slow, it should probably start using
@@ -193,7 +197,7 @@ function get_layout_by_name(surface_name)
 	end
 end
 
-function save_health_data(factory)
+function save_health_data(factory, structure)
 	i = 1
 	while global["health-data"][i] do
 	i = i + 1
@@ -209,7 +213,7 @@ function save_health_data(factory)
 			end
 		end
 		global["health-data"][i] = {
-			surface = get_surface(factory),
+			structure = structure,
 			health = factory.health,
 			backer_name = factory.backer_name,
 			energy = factory.energy,
@@ -347,13 +351,13 @@ function on_built_factory(factory)
 	factory.rotatable = false
 	health_data = get_and_delete_health_data(factory.health)
 	if health_data then
-		connect_factory_to_existing_surface(factory, health_data.surface)
+		connect_factory_to_existing_structure(factory, health_data.structure)
 		for k, v in pairs(health_data) do
-			if k ~= "surface" then
+			if k ~= "structure" then
 				factory[k] = v
 			end
 		end
-		mark_connections_dirty(factory)
+		mark_structure_connections_dirty(health_data.structure)
 
 	else
 		dbg("Generating new factory interior")
@@ -375,8 +379,8 @@ end
 
 
 function on_picked_up_factory(factory)
-	save_health_data(factory)
-	local structure = get_structure(get_surface(factory))
+	local structure = get_factory_structure(factory)
+	save_health_data(factory, structure)
 	for _, data in pairs(structure.connections) do
 		destroy_connection(data)
 	end
