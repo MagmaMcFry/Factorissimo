@@ -105,11 +105,14 @@ end
 
 function connect_factory_to_existing_structure(factory, structure)
 	local layout = get_structure_layout(structure)
+
+	structure.factory = factory
 	structure.exit = {
 		x = factory.position.x + layout.exit_x,
 		y = factory.position.y + layout.exit_y,
 		surface = factory.surface,
 	}
+
 	set_factory_structure(factory, structure)
 	dbg("reconnected " .. structure.name)
 end
