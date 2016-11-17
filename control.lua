@@ -146,14 +146,6 @@ function calculate_offset(layout, index)
 	}
 end
 
---function has_surface(factory)
---	return global["factory-surface"][factory.unit_number] ~= nil
---end
-
-function is_factory_surface(surface)
-	return global["surfaces"][surface.name] ~= nil
-end
-
 function get_factory_structure(factory)
 	return global["factory-structures"][factory.unit_number]
 end
@@ -187,14 +179,6 @@ end
 
 function get_structure_layout(structure)
 	return LAYOUT[structure.surface_details.layout_name]
-end
-
-function get_layout_by_name(surface_name)
-	if global["surface-layout"][surface_name] then
-		return LAYOUT[global["surface-layout"][surface_name]]
-	else
-		return nil
-	end
 end
 
 function save_health_data(factory, structure)
@@ -267,18 +251,6 @@ function add_tile_rect(tiles, tile_name, xmin, ymin, xmax, ymax, offset) -- tile
 	end
 end
 
-function place_entity(surface, entity_name, x, y, force, direction)
-	entity = surface.create_entity{name = entity_name, position = {x, y}, force = force, direction = direction}
-	if entity then
-		entity.minable = false
-		entity.rotatable = false
-		entity.destructible = false
-	end
-	return entity
-end
-
-
--- TODO merge with place_entity?
 function place_entity_generated(structure, entity_name, x, y, structure_key)
 	local surface = structure.surface
 	local entity = surface.create_entity{
