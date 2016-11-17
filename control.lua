@@ -12,6 +12,8 @@ function glob_init()
 	global["health-data"] = global["health-data"] or {}
 
 	global["surfaces"] = global["surfaces"] or {}
+	global["layout-surfaces"] = global["layout-surfaces"] or {}
+
 	global["structures"] = global["structures"] or {}
 	global["entity-structures"] = global["entity-structures"] or {}
 	global["factory-structures"] = global["entity-structures"] or {}
@@ -39,12 +41,11 @@ local CHUNK_SIZE = 64
 -- FACTORY WORLD ASSIGNMENT --
 
 function maybe_create_surface(layout)
-	local name = "factorissimo " .. layout.name
-	local surface = game.surfaces[name]
-	if surface then
-		return surface
+	local details = global["layout-surfaces"][layout.name]
+	if details then
+		return details.surface
 	else
-		return create_surface(layout, name)
+		return create_surface(layout, "Factorissimo " .. layout.name)
 	end
 end
 
@@ -54,12 +55,15 @@ function create_surface(layout, surface_name)
 		height = 2,
 	})
 
-	global["surfaces"][surface_name] = {
+	local details = {
+		surface = surface,
 		layout_name = layout.name,
 		chunks_generated = 0,
 		chunks_required = 4, -- based on width+height above
 		chunks_finished = false
 	}
+	global["surfaces"][surface_name] = details
+	global["layout-surfaces"][layout.name] = details
 
 	surface.request_to_generate_chunks({0, 0}, 1)
 	reset_daytime(surface)
