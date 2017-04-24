@@ -133,7 +133,6 @@ end
 --remote.add_interface("factorissimo_belt", 
 register_connection_type("belt",
 	{
-	
 		-- This function is given an entity that was placed on an outside port and must decide whether the entity is acceptable for this connection type.
 		-- If the entity is accepted, this function must establish a connection and return a data table containing all the relevant connection information, otherwise this function must return nil.
 		-- Arguments:
@@ -182,30 +181,171 @@ register_connection_type("belt",
 			if data.from.valid and data.to.valid then
 				local f1 = data.from.get_transport_line(1)
 				local t1 = data.to.get_transport_line(1)
-				local active = false
+				local beltpos = 0
 				for t, c in pairs(f1.get_contents()) do
-					if t1.insert_at(0.75, {name = t, count = 1}) then
-						f1.remove_item{name = t, count = 1}
-						active = true
+					local remaining = c
+					while remaining > 0 do
+						if t1.insert_at(beltpos, {name = t, count = 1}) then
+							beltpos = beltpos + 0.25
+							remaining = remaining - 1
+						else
+							break
+						end
+					end
+					if c > remaining then
+						f1.remove_item{name = t, count = c-remaining}
 					end
 				end
 				local f2 = data.from.get_transport_line(2)
 				local t2 = data.to.get_transport_line(2)
+				local beltpos = 0
 				for t, c in pairs(f2.get_contents()) do
-					if t2.insert_at(0.75, {name = t, count = 1}) then -- TODO batching
-						f2.remove_item{name = t, count = 1}
-						active = true
+					local remaining = c
+					while remaining > 0 do
+						if t2.insert_at(beltpos, {name = t, count = 1}) then
+							beltpos = beltpos + 0.25
+							remaining = remaining - 1
+						else
+							break
+						end
+					end
+					if c > remaining then
+						f2.remove_item{name = t, count = c-remaining}
 					end
 				end
+				
+				local outboundbuffer = math.max(math.min(t1.get_item_count(),t2.get_item_count()),1)
 				
 				-- data.belt_speed is in tiles per tick
 				-- 9/32 tiles per item
 				-- Wait for amount of ticks per item
-				--if active then
-					return (9/32)/data.belt_speed
-				--else
-				--	return 3*(9/32)/data.belt_speed
-				--end
+				return (9/32)/data.belt_speed * outboundbuffer
+			else
+				return false -- The belts are broken, so we destroy the connection.
+			end
+		end,
+		
+		-- This function is called whenever a connection is broken, either when on_update returns false or nil, or when the factory is picked up or destroyed. All entities created as part of this connection must be destroyed here.
+		-- Arguments:
+		--   data: The connection data table created in accepts_outside_entity.
+		on_destroy = function(data)
+			if data.inside.valid then
+				data.inside.destroy()
+			elseif data.outside.valid then
+				data.outside.destroy()
+			end
+		end,
+	}
+)
+
+register_connection_type("underground-belt",
+	{
+		-- This function is given an entity that was placed on an outside port and must decide whether the entity is acceptable for this connection type.
+		-- If the entity is accepted, this function must establish a connection and return a data table containing all the relevant connection information, otherwise this function must return nil.
+		-- Arguments:
+		--   outside_entity: The entity to inspect.
+		--   factory: The factory it is trying to connect to.
+		--   interior: The surface for the factory interior.
+		--   conn_specs: Connection specification. This is a table with the following fields:
+		--     outside_pos: The half-integer coordinates of the outside port position on the outside surface, available as factory.surface.
+		--     inside_pos: The half-integer coordinates of the inside port position on the inside surface, available as interior.
+		--     direction_in: Inwards-pointing direction.
+		--     direction_out: Outwards-pointing direction. Opposite of direction_in, for your convenience.
+		accepts_outside_entity = function(outside_entity, factory, interior, conn_specs)
+			local inside_entity = nil
+			local inwards = false
+			if outside_entity.type == "underground-belt" then
+				if outside_entity.direction == conn_specs.direction_in and outside_entity.belt_to_ground_type == "input" then
+					inside_entity = interior.create_entity{name = outside_entity.name, position = conn_specs.inside_pos, force = factory.force, direction = conn_specs.direction_in, type = "output"}
+					inwards = (outside_entity.direction == conn_specs.direction_in)
+				elseif outside_entity.direction == conn_specs.direction_out and outside_entity.belt_to_ground_type == "output" then
+					inside_entity = interior.create_entity{name = outside_entity.name, position = conn_specs.inside_pos, force = factory.force, direction = conn_specs.direction_out, type = "input"}
+					inwards = (outside_entity.direction == conn_specs.direction_in)
+				else
+					return nil
+				end
+			else
+				return nil
+			end
+			if not inside_entity then return nil end
+			inside_entity.rotatable = false
+			data = {
+				outside = outside_entity, inside = inside_entity,
+				belt_speed = outside_entity.prototype.belt_speed
+			}
+			return data
+		end,
+		
+		-- This function is called repeatedly to update an established connection. It is called once directly after the connection is created, and must return the amount of ticks until the next update as an integer between 1 and 600 inclusive. If false or nil is returned instead, then the connection will be deleted, after a call to on_destroy (see below).
+		-- Arguments:
+		--   data: The connection data table created in accepts_outside_entity. It can be modified at will inside this function.
+		on_update = function(data)
+			if data.outside.valid and data.inside.valid then		
+				local from, to
+				if data.outside.belt_to_ground_type == "input" then
+					if data.inside.belt_to_ground_type ~= "output" then
+						local surface = data.inside.surface
+						local params = {name = data.inside.name, position = data.inside.position, force = data.inside.force, direction = data.outside.direction, type = "output", rotatable = false}
+						data.inside.destroy()
+						data.inside = surface.create_entity(params)
+						data.inside.rotatable = false
+					end
+					from = data.outside
+					to = data.inside
+				else
+					if data.inside.belt_to_ground_type ~= "input" then
+						local surface = data.inside.surface
+						local params = {name = data.inside.name, position = data.inside.position, force = data.inside.force, direction = data.outside.direction, type = "input", rotatable = false}
+						data.inside.destroy()
+						data.inside = surface.create_entity(params)
+						data.inside.rotatable = false
+					end
+					from = data.inside
+					to = data.outside
+				end
+				
+				local f1 = from.get_transport_line(defines.transport_line.left_underground_line)
+				local t1 = to.get_transport_line(defines.transport_line.left_underground_line)	
+				local beltpos = 0
+				for t, c in pairs(f1.get_contents()) do
+					local remaining = c
+					while remaining > 0 do
+						if t1.insert_at(beltpos, {name = t, count = 1}) then
+							beltpos = beltpos + 0.25
+							remaining = remaining - 1
+						else
+							break
+						end
+					end
+					if c > remaining then
+						f1.remove_item{name = t, count = c-remaining}
+					end
+				end
+				
+				local f2 = from.get_transport_line(defines.transport_line.right_underground_line)
+				local t2 = to.get_transport_line(defines.transport_line.right_underground_line)
+				local beltpos = 0
+				for t, c in pairs(f2.get_contents()) do
+					local remaining = c
+					while remaining > 0 do
+						if t2.insert_at(beltpos, {name = t, count = 1}) then
+							beltpos = beltpos + 0.25
+							remaining = remaining - 1
+						else
+							break
+						end
+					end
+					if c > remaining then
+						f2.remove_item{name = t, count = c-remaining}
+					end
+				end
+				
+				local outboundbuffer = math.max(math.min(t1.get_item_count(),t2.get_item_count()),1)
+				
+				-- data.belt_speed is in tiles per tick
+				-- 9/32 tiles per item
+				-- Wait for amount of ticks per item
+				return (9/32)/data.belt_speed * outboundbuffer
 			else
 				return false -- The belts are broken, so we destroy the connection.
 			end
@@ -249,22 +389,26 @@ register_connection_type("pipe",
 		
 		on_update = function(data)
 			if data.outside.valid and data.inside.valid then
+				local delta = 0
 				fluid1 = data.outside.fluidbox[1]
 				fluid2 = data.inside.fluidbox[1]
 				if fluid1 and fluid2 then
 					if fluid1.type == fluid2.type then
 						local amount = fluid1.amount + fluid2.amount
+						delta = math.abs(fluid1.amount - fluid2.amount)
 						local temperature = (fluid1.amount*fluid1.temperature+fluid2.amount*fluid2.temperature)/amount -- Total temperature balance
 						data.outside.fluidbox[1] = {type = fluid1.type, amount=amount/2, temperature=temperature}
 						data.inside.fluidbox[1] = {type = fluid1.type, amount=amount/2, temperature=temperature}
 					end
 				elseif fluid1 or fluid2 then
 					fluid = fluid1 or fluid2
+					delta = fluid.amount
 					fluid.amount = fluid.amount/2
 					data.outside.fluidbox[1] = fluid
 					data.inside.fluidbox[1] = fluid
 				end
-				return 1
+
+				return math.max(10 - math.ceil(delta),1)
 			else
 				return false
 			end
