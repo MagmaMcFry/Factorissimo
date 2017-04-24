@@ -20,11 +20,17 @@ end
 script.on_init(function()
 	glob_init()
 	init_update_system()
+	game.print("NOTICE: Factorissimo will not be available for Factorio 0.15. Instead, try out Factorissimo2, it's much better!")
 end)
 
 script.on_configuration_changed(function(configuration_changed_data)
 	glob_init()
 	do_required_updates()
+	game.print("NOTICE: Factorissimo will not be available for Factorio 0.15. Instead, try out Factorissimo2, it's much better!")
+end)
+
+script.on_event({defines.events.on_player_joined_game, defines.events.on_player_created}, function(event)
+	game.players[event.player_index].print("NOTICE: Factorissimo will not be available for Factorio 0.15. Instead, try out Factorissimo2, it's much better!")
 end)
 
 -- SETTINGS --
@@ -240,10 +246,16 @@ function on_built_factory(factory)
 		mark_connections_dirty(factory)
 
 	elseif not has_surface(factory) then -- Should always be the case, but just in case
-		dbg("Generating new factory interior")
-		local layout = LAYOUT[factory.name]
-		create_surface(factory, layout)
-		factory.energy = 0
+		if #(game.surfaces) < 256 then
+			dbg("Generating new factory interior")
+			local layout = LAYOUT[factory.name]
+			create_surface(factory, layout)
+			factory.energy = 0
+		else
+			factory.force.print("Unfortunately you have no more free surfaces left for Factorissimo to use. You can no longer place any more fresh factory buildings or power plant buildings in this world.")
+			factory.force.print("Try out Factorissimo2, it doesn't have any limitation on the number of factories you can build. You will need a new save though (or an older version of this save), since Factorissimo2 needs at least one free surface.")
+			factory.destroy()
+		end
 	end
 end
 
